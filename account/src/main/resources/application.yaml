@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: account
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_core
+    username: postgres
+    password: password
+  jpa:
+    properties:
+      hibernate:
+        default_schema: fc_account
