@@ -1,0 +1,22 @@
+server:
+  port: 8081
+
+customer:
+  config:
+    database:
+      schema: fc_customer
+
+spring:
+  application:
+    name: customer
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${customer.config.database.schema}
+    username: postgres
+    password: password
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${customer.config.database.schema}
+    hibernate:
+      ddl-auto: validate
+
