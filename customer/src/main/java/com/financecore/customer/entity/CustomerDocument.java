@@ -19,6 +19,11 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Manages Customer documents with required information
+ *
+ * @author Roshan
+ */
 @Entity
 @Table(name = "customer_document")
 @Getter
