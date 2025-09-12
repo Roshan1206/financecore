@@ -1,4 +1,4 @@
-package com.financecore.customer.entity;
+package com.financecore.customer.entity.enums;
 
 /**
  * Enums for customer type

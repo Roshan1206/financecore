@@ -1,4 +1,4 @@
-package com.financecore.account.entity;
+package com.financecore.account.entity.enums;
 
 /**
  * Account status

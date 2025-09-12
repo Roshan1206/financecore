@@ -1,5 +1,8 @@
 package com.financecore.customer.entity;
 
+import com.financecore.customer.entity.enums.CustomerType;
+import com.financecore.customer.entity.enums.RiskProfile;
+import com.financecore.customer.entity.enums.Status;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

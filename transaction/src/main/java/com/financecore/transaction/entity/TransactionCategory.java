@@ -1,5 +1,6 @@
 package com.financecore.transaction.entity;
 
+import com.financecore.transaction.entity.enums.ParentCategory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

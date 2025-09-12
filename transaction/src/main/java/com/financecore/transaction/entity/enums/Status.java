@@ -1,4 +1,4 @@
-package com.financecore.transaction.entity;
+package com.financecore.transaction.entity.enums;
 
 /**
  * Enums for transaction status.

@@ -1,5 +1,6 @@
 package com.financecore.account.entity;
 
+import com.financecore.account.entity.enums.ProductType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

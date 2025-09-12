@@ -1,4 +1,4 @@
-package com.financecore.transaction.entity;
+package com.financecore.transaction.entity.enums;
 
 /**
  * Enum class for transaction limit type.

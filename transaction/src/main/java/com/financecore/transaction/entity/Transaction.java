@@ -1,5 +1,8 @@
 package com.financecore.transaction.entity;
 
+import com.financecore.transaction.entity.enums.Channel;
+import com.financecore.transaction.entity.enums.Status;
+import com.financecore.transaction.entity.enums.TransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
