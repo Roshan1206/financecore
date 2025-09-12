@@ -21,6 +21,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -86,8 +87,8 @@ public class Account {
 
     @UpdateTimestamp
     @Column(name = "last_activity_date", nullable = false, insertable = false)
-    private LocalDateTime lastActivityDate;
+    private LocalDate lastActivityDate;
 
-    @OneToMany(mappedBy = "accounts")
-    private Set<AccountBeneficiary> accountBeneficiaries = new HashSet<>();
+    @OneToMany(mappedBy = "account")
+    private final Set<AccountBeneficiary> accountBeneficiaries = new HashSet<>();
 }

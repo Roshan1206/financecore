@@ -1,11 +1,21 @@
+server:
+  port: 8082
+
+account:
+  config:
+    database:
+      schema: fc_account
+
 spring:
   application:
     name: account
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_core
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${account.config.database.schema}
     username: postgres
     password: password
   jpa:
     properties:
       hibernate:
-        default_schema: fc_account
+        default_schema: ${account.config.database.schema}
+    hibernate:
+      ddl-auto: validate
