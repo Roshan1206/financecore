@@ -1,0 +1,21 @@
+server:
+  port: 8083
+
+transaction:
+  config:
+    database:
+      schema: fc_transaction
+
+spring:
+  application:
+    name: transaction
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${transaction.config.database.schema}
+    username: postgres
+    password: password
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${transaction.config.database.schema}
+    hibernate:
+      ddl-auto: validate
