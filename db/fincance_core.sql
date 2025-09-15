@@ -28,6 +28,7 @@ create table customer (
 alter table fc_customer.customer alter column created_at type timestamp;
 alter table fc_customer.customer alter column updated_at type timestamp;
 alter table fc_customer.customer add column is_active boolean;
+alter table fc_customer.customer alter column customer_number set default 'CUST' || nextval('fc_customer.customer_customer_id_seq');
 
 create type address_enum as enum ('HOME', 'WORK', 'MAILINNG');
 
@@ -70,6 +71,8 @@ create table customer_document (
 		on delete cascade 
 );
 
+alter table fc_customer.address alter column customer_id type bigint;
+alter table fc_customer.customer_document alter column customer_id type bigint;
 set search_path to fc_account;
 
 create type account_type_enum as enum ('CURRENT', 'SAVING', 'CREDIT', 'LOAN');
@@ -88,6 +91,9 @@ create table account_product (
 	created_at timestamp not null default now(),
 	updated_at timestamp not null default now()
 );
+alter table fc_account.account_product alter column product_name type varchar(50);
+alter table fc_account.account_product drop constraint account_product_minimum_balance_check;
+alter table fc_account.account_product add constraint account_product_minimum_balance_check check (minimum_balance >= 0);
 
 create table account (
 	account_id BIGSERIAL primary key,
@@ -105,6 +111,7 @@ create table account (
 		fk_product foreign key (product_id)
 			references account_product(product_id)		
 );
+alter table fc_account.account alter column account_number set default 'ACC' || nextval('fc_account.account_account_id_seq');
 
 create table account_beneficiary (
 	beneficiary_id BIGSERIAL primary key,
@@ -122,6 +129,11 @@ alter table fc_account.account add column custom_overdraft_limit decimal(10,2);
 alter table fc_account.account_beneficiary rename column benificiary_name to beneficiary_name;
 alter table fc_account.account_beneficiary alter column contact_info type jsonb;
 alter table fc_account.account_product alter column features type jsonb;
+alter table fc_account.account alter column customer_id type bigint;
+alter table fc_account.account alter column product_id type bigint;
+alter table fc_account.account_beneficiary alter column account_id type bigint;
+alter table fc_account.account alter column custom_minimum_balance type decimal(10,2);
+alter table fc_account.account_beneficiary drop constraint account_beneficiary_account_id_key;
 
 set search_path to fc_transaction;
 
@@ -162,6 +174,7 @@ create table transaction(
 );
 
 create type limit_type_enum as enum ('DAILY', 'WEEKLY', 'MONTHLY', 'TRANSCATION');
+alter type fc_transaction.limit_type_enum rename value 'TRANSACATION' to 'TRANSACTION';
 create table transaction_limits(
 	limit_id BIGSERIAL primary key,
 	account_id BIGSERIAL not null,
@@ -176,6 +189,31 @@ create table transaction_limits(
 
 alter table fc_transaction.transaction alter column merchant_info type jsonb;
 alter table fc_transaction.transaction alter column location type jsonb;
+alter table fc_transaction.transaction alter column to_account_id type bigint;
+alter table fc_transaction.transaction alter column from_account_id type bigint;
+alter table fc_transaction.transaction_limits alter column account_id type bigint;
+
+ALTER SEQUENCE fc_account.account_account_id_seq RESTART WITH 10000000000;
+ALTER TABLE fc_account.account ALTER COLUMN customer_id DROP DEFAULT;
+alter table fc_account.account alter column product_id drop default;
+alter table fc_account.account_beneficiary alter column account_id drop default;
+alter sequence fc_account.account_beneficiary_beneficiary_id_seq restart with 1000000000;
+alter sequence fc_account.account_product_product_id_seq restart with 1000000000;
+
+alter table fc_customer.address alter column customer_id drop default;
+alter sequence fc_customer.address_address_id_seq restart with 1000000000;
+alter table fc_customer.customer_document alter column customer_id drop default;
+alter sequence fc_customer.customer_customer_id_seq restart with 1000000000;
+alter sequence fc_customer.customer_document_document_id_seq restart with 1000000000;
+
+alter sequence fc_transaction.transaction_transaction_id_seq restart with 1000000000;
+alter sequence fc_transaction.transaction_limits_limit_id_seq restart with 1000000000;
+alter sequence fc_transaction.transaction_subcategory_subcategory_id_seq restart with 1000000000;
+alter table fc_transaction.transaction alter column from_account_id drop default;
+alter table fc_transaction.transaction alter column to_account_id drop default;
+alter table fc_transaction.transaction_limits alter column account_id drop default;
+
+
 
 
 

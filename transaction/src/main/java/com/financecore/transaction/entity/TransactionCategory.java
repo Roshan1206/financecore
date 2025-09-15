@@ -16,6 +16,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -43,7 +45,8 @@ public class TransactionCategory {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "parent_category", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "parent_category", columnDefinition = "parent_category_enum", nullable = false)
     private ParentCategory parentCategory;
 
     @Column(name = "is_active", nullable = false)

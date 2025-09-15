@@ -19,7 +19,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,15 +68,18 @@ public class Customer {
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "customer_type", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "customer_type", columnDefinition = "customer_enum", nullable = false)
     private CustomerType customerType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "kyc_status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "kyc_status", columnDefinition = "kyc_enum", nullable = false)
     private Status kycStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "risk_profile", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "risk_profile", columnDefinition = "risk_enum", nullable = false)
     private RiskProfile riskProfile;
 
     @CreationTimestamp

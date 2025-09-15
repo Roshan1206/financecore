@@ -14,7 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,7 +44,8 @@ public class TransactionLimit {
     private long accountId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "limit_type")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "limit_type", columnDefinition = "limit_type_enum")
     private LimitType limitType;
 
     @Column(name = "limit_amount")

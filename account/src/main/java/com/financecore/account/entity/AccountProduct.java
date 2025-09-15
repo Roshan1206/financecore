@@ -15,7 +15,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -44,7 +46,8 @@ public class AccountProduct {
     private String productName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "product_type", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "product_type", columnDefinition = "account_type_enum", nullable = false)
     private ProductType productType;
 
     @Column(name = "interest_rate", nullable = false, precision = 5, scale = 2)

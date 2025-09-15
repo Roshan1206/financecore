@@ -7,7 +7,7 @@ package com.financecore.account.entity.enums;
  */
 public enum ProductType {
 
-    CHECKING,
+    CURRENT,
     SAVING,
     CREDIT,
     LOAN

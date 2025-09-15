@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,7 +20,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -54,7 +57,8 @@ public class Transaction {
     private long toAccountId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "transaction_type", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "transaction_type", columnDefinition = "transaction_enum", nullable = false)
     private TransactionType type;
 
     @Column(name = "amount", precision = 10, scale = 2)
@@ -66,12 +70,13 @@ public class Transaction {
     @Column(name = "description")
     private String description;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subcategory_id", nullable = false)
     private TransactionCategory category;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "transaction_status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "transaction_status", columnDefinition = "transaction_status_enum", nullable = false)
     private Status status;
 
     @CreationTimestamp
@@ -82,7 +87,8 @@ public class Transaction {
     private LocalDate date;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "channel", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "channel", columnDefinition = "channel_enum", nullable = false)
     private Channel channel;
 
     @Column(name = "reference_number")
