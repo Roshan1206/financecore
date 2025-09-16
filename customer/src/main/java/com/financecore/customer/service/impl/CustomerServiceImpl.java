@@ -1,11 +1,13 @@
 package com.financecore.customer.service.impl;
 
+import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.Customer;
 import com.financecore.customer.entity.enums.CustomerType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
+import com.financecore.customer.mapper.CustomerMapper;
 import com.financecore.customer.repository.CustomerRepository;
 import com.financecore.customer.service.CustomerService;
 import jakarta.persistence.EntityManager;
@@ -16,10 +18,13 @@ import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +35,7 @@ import java.util.List;
  *
  * @author Roshan
  */
+@Slf4j
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
@@ -47,7 +53,7 @@ public class CustomerServiceImpl implements CustomerService {
     /**
      * Retrieve paginated list of customers with filtering
      *
-     * @param status        Customer KYC Status
+     * @param kycStatus     Customer KYC Status
      * @param customerType  Customer type
      * @param riskProfile   Risk profiles
      * @param email         Customer email
@@ -58,7 +64,7 @@ public class CustomerServiceImpl implements CustomerService {
      * @return customers list
      */
     @Override
-    public PageResponse<CustomersResponse> getCustomers(Status status, CustomerType customerType, RiskProfile riskProfile, String email,
+    public PageResponse<CustomersResponse> getCustomers(Status kycStatus, CustomerType customerType, RiskProfile riskProfile, String email,
                                                         String phoneNumber, String accountNumber, Pageable pageable) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<CustomersResponse> query = cb.createQuery(CustomersResponse.class);
@@ -77,8 +83,10 @@ public class CustomerServiceImpl implements CustomerService {
                 root.get("createdAt")
         ));
 
-        createFilter(status, customerType, riskProfile, email, phoneNumber, accountNumber, cb, query, root);
-        long totalCount = getTotalCount(status, customerType, riskProfile, email, phoneNumber, accountNumber, cb);
+        String modifiedPhoneNumber = "+" + phoneNumber.trim();
+
+        createFilter(kycStatus, customerType, riskProfile, email, modifiedPhoneNumber, accountNumber, cb, query, root);
+        long totalCount = getTotalCount(kycStatus, customerType, riskProfile, email, modifiedPhoneNumber, accountNumber, cb);
 
         if (pageable.getSort().isSorted()){
             List<Order> orders = new ArrayList<>();
@@ -105,9 +113,28 @@ public class CustomerServiceImpl implements CustomerService {
 
 
     /**
+     * Get detailed information for customer.
+     *
+     * @param customerNumber Customer number
+     * @return customer information
+     */
+    @Override
+    public CustomerInfoResponse getCustomerInfo(String customerNumber) {
+        Customer customer = customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
+                () -> {
+                    String message = "Customer not found with given Customer number: " + customerNumber;
+                    log.debug(message);
+                    return new  ResponseStatusException(HttpStatus.NOT_FOUND, message);
+                }
+        );
+        return CustomerMapper.mapToCustomerInfoResponse(customer);
+    }
+
+
+    /**
      * Retrieve paginated list of customers with filtering
      *
-     * @param status        Customer KYC Status
+     * @param kycStaus      Customer KYC Status
      * @param customerType  Customer type
      * @param riskProfile   Risk profiles
      * @param email         Customer email
@@ -117,13 +144,13 @@ public class CustomerServiceImpl implements CustomerService {
      *
      * @return Total customers in search
      */
-    private long getTotalCount(Status status, CustomerType customerType, RiskProfile riskProfile, String email,
+    private long getTotalCount(Status kycStaus, CustomerType customerType, RiskProfile riskProfile, String email,
                                String phoneNumber, String accountNumber, CriteriaBuilder cb){
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Customer> root = query.from(Customer.class);
 
         query.select(cb.count(root));
-        createFilter(status, customerType, riskProfile, email, phoneNumber, accountNumber, cb, query, root);
+        createFilter(kycStaus, customerType, riskProfile, email, phoneNumber, accountNumber, cb, query, root);
         return entityManager.createQuery(query).getSingleResult();
     }
 
@@ -131,7 +158,7 @@ public class CustomerServiceImpl implements CustomerService {
     /**
      * Retrieve paginated list of customers with filtering
      *
-     * @param status        Customer KYC Status
+     * @param kycStatus     Customer KYC Status
      * @param customerType  Customer type
      * @param riskProfile   Risk profiles
      * @param email         Customer email
@@ -139,12 +166,12 @@ public class CustomerServiceImpl implements CustomerService {
      * @param accountNumber Customer account number
      * @param cb            Criteria builder
      */
-    private void createFilter(Status status, CustomerType customerType, RiskProfile riskProfile, String email,
+    private void createFilter(Status kycStatus, CustomerType customerType, RiskProfile riskProfile, String email,
                               String phoneNumber, String accountNumber, CriteriaBuilder cb, CriteriaQuery<?> query, Root<Customer> root) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (status != null){
-            predicates.add(cb.equal(root.get("status"), status));
+        if (kycStatus != null){
+            predicates.add(cb.equal(root.get("kycStatus"), kycStatus));
         }
         if (customerType != null){
             predicates.add(cb.equal(root.get("customerType"), customerType));
@@ -153,6 +180,9 @@ public class CustomerServiceImpl implements CustomerService {
             predicates.add(cb.equal(root.get("riskProfile"), riskProfile));
         }
         if (email != null){
+            predicates.add(cb.equal(root.get("email"), email));
+        }
+        if (phoneNumber != null){
             predicates.add(cb.equal(root.get("phoneNumber"), phoneNumber));
         }
         if (accountNumber != null){

@@ -1,5 +1,6 @@
 package com.financecore.customer.controller;
 
+import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
@@ -12,25 +13,39 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller class for managing customer via REST APIs.
+ *
+ * @author Roshan
+ */
 @RestController
 @RequestMapping("/v1/customers")
 public class CustomerController {
 
+    /**
+     * Interface for managing customer operations
+     */
     private final CustomerService customerService;
 
+
+    /**
+     * Injecting required dependency
+     */
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
 
-//    GET /api/v1/customers
-//- Description: Retrieve paginated list of customers with filtering
-//- Query Params: page, size, status, customerType, riskProfile, email, phone, accountNumber
+    /**
+     * Retrieve paginated list of customers with filtering
+     * Query Params: page, size, status, customerType, riskProfile, email, phone, accountNumber
+     */
     @GetMapping
-    public ResponseEntity<PageResponse<CustomersResponse>> getCustomers(@RequestParam(required = false) Status status,
+    public ResponseEntity<PageResponse<CustomersResponse>> getCustomers(@RequestParam(required = false) Status kycStatus,
                                                                         @RequestParam(required = false) CustomerType customerType,
                                                                         @RequestParam(required = false) RiskProfile riskProfile,
                                                                         @RequestParam(required = false) String email,
@@ -42,13 +57,18 @@ public class CustomerController {
                                                                         @RequestParam(defaultValue = "true") boolean asc){
         Sort sort = asc ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        PageResponse<CustomersResponse> response = customerService.getCustomers(status, customerType, riskProfile, email, phoneNumber, accountNumber, pageable);
+        PageResponse<CustomersResponse> response = customerService.getCustomers(kycStatus, customerType, riskProfile, email, phoneNumber, accountNumber, pageable);
         return ResponseEntity.ok(response);
     }
 
-//
-//    GET /api/v1/customers/{customerId}
-//- Description: Get detailed customer information including addresses and documents
+
+    /**
+     * Get detailed customer information including addresses and documents
+     */
+    @GetMapping("/{customerNumber}")
+    public ResponseEntity<CustomerInfoResponse> getCustomerInfo(@PathVariable String customerNumber){
+        return ResponseEntity.ok(customerService.getCustomerInfo(customerNumber));
+    }
 //
 //    POST /api/v1/customers
 //- Description: Create new customer profile with KYC initiation

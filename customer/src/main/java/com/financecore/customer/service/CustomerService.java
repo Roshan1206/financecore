@@ -1,5 +1,6 @@
 package com.financecore.customer.service;
 
+import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
@@ -27,4 +28,13 @@ public interface CustomerService {
      */
     PageResponse<CustomersResponse> getCustomers(Status status, CustomerType customerType, RiskProfile riskProfile,
                                                  String email, String phoneNumber, String accountNumber, Pageable pageable);
+
+
+    /**
+     * Get detailed information for customer.
+     *
+     * @param customerNumber Customer number
+     * @return customer information
+     */
+    CustomerInfoResponse getCustomerInfo(String customerNumber);
 }
