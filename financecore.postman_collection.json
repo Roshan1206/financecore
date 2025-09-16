@@ -1,0 +1,342 @@
+{
+	"info": {
+		"_postman_id": "df3ffe8b-5725-4021-9d0e-3e8ae5559a95",
+		"name": "financecore",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12851238"
+	},
+	"item": [
+		{
+			"name": "Actuator",
+			"item": [
+				{
+					"name": "Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8888/actuator",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8888",
+							"path": [
+								"actuator"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eureka",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8761/actuator",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8761",
+							"path": [
+								"actuator"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Customer",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8081/actuator",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8081",
+							"path": [
+								"actuator"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accounts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "productType",
+							"value": "CURRENT",
+							"disabled": true
+						},
+						{
+							"key": "accountStatus",
+							"value": "ACTIVE",
+							"disabled": true
+						},
+						{
+							"key": "minAmount",
+							"value": "1000",
+							"disabled": true
+						},
+						{
+							"key": "maxAmount",
+							"value": "5000",
+							"disabled": true
+						},
+						{
+							"key": "fromDate",
+							"value": "2023-02-20",
+							"disabled": true
+						},
+						{
+							"key": "toDate",
+							"value": "2023-02-20",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Transactions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8083/api/v1/transactions?accountId=10000000011",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8083",
+					"path": [
+						"api",
+						"v1",
+						"transactions"
+					],
+					"query": [
+						{
+							"key": "accountId",
+							"value": "10000000011"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Transaction Info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8083/api/v1/transactions/1000000020",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8083",
+					"path": [
+						"api",
+						"v1",
+						"transactions",
+						"1000000020"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Account Status",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/ACC001234567890/status?accountStatus=CLOSE",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"ACC001234567890",
+						"status"
+					],
+					"query": [
+						{
+							"key": "accountStatus",
+							"value": "CLOSE"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Account Balance",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/ACC001234567890/balance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"ACC001234567890",
+						"balance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Eureka Dashboard",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8761/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8761",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Customers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers?phoneNumber=+91-9087654321",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers"
+					],
+					"query": [
+						{
+							"key": "kycStatus",
+							"value": "PENDING",
+							"disabled": true
+						},
+						{
+							"key": "customerType",
+							"value": "INDIVIDUAL",
+							"disabled": true
+						},
+						{
+							"key": "riskProfile",
+							"value": "MEDIUM",
+							"disabled": true
+						},
+						{
+							"key": "email",
+							"value": "meera.nair@gmail.com",
+							"disabled": true
+						},
+						{
+							"key": "phoneNumber",
+							"value": "+91-9087654321"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Customer Info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers?phoneNumber=+91-9087654321",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers"
+					],
+					"query": [
+						{
+							"key": "kycStatus",
+							"value": "PENDING",
+							"disabled": true
+						},
+						{
+							"key": "customerType",
+							"value": "INDIVIDUAL",
+							"disabled": true
+						},
+						{
+							"key": "riskProfile",
+							"value": "MEDIUM",
+							"disabled": true
+						},
+						{
+							"key": "email",
+							"value": "meera.nair@gmail.com",
+							"disabled": true
+						},
+						{
+							"key": "phoneNumber",
+							"value": "+91-9087654321"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
