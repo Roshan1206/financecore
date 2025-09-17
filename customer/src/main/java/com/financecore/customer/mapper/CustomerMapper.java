@@ -1,11 +1,18 @@
 package com.financecore.customer.mapper;
 
+import com.financecore.customer.dto.request.AddressRequest;
+import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.response.AddressResponse;
 import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.entity.Address;
 import com.financecore.customer.entity.Customer;
 import com.financecore.customer.entity.CustomerDocument;
+import com.financecore.customer.entity.enums.AddressType;
+import com.financecore.customer.entity.enums.CustomerType;
+import com.financecore.customer.entity.enums.DocumentType;
+import com.financecore.customer.entity.enums.RiskProfile;
+import com.financecore.customer.entity.enums.Status;
 
 import java.util.stream.Collectors;
 
@@ -52,5 +59,39 @@ public class CustomerMapper {
         response.setVerificationStatus(document.getVerificationStatus());
 
         return response;
+    }
+
+    public static Customer mapToCustomer(CustomerRegistrationRequest request, CustomerType customerType){
+        return Customer.builder()
+                .customerType(customerType)
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhoneNumber())
+                .dateOfBirth(request.getDateOfBirth())
+                .kycStatus(Status.PENDING)
+                .riskProfile(RiskProfile.LOW)
+                .isActive(true)
+                .build();
+    }
+
+    public static Address mapToAddress(Customer customer, AddressType addressType, AddressRequest addressRequest){
+        Address address = new Address();
+        address.setCustomer(customer);
+        address.setAddressType(addressType);
+        address.setStreetAddress(addressRequest.getStreetAddress());
+        address.setCity(addressRequest.getCity());
+        address.setState(addressRequest.getState());
+        address.setCountry(addressRequest.getCountry());
+        address.setZipCode(addressRequest.getZipCode());
+        return address;
+    }
+
+    public static CustomerDocument mapToCustomerDocument(Customer customer, DocumentType documentType, String documentNumber){
+        CustomerDocument customerDocument = new CustomerDocument();
+        customerDocument.setCustomer(customer);
+        customerDocument.setDocumentType(documentType);
+        customerDocument.setDocumentNumber(documentNumber);
+        return customerDocument;
     }
 }

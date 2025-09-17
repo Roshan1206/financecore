@@ -1,5 +1,7 @@
 package com.financecore.customer.controller;
 
+import com.financecore.customer.dto.request.CustomerRegistrationRequest;
+import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
@@ -11,9 +13,13 @@ import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -72,16 +78,21 @@ public class CustomerController {
 //
 //    POST /api/v1/customers
 //- Description: Create new customer profile with KYC initiation
+    @PostMapping
+    public ResponseEntity<CustomerInfoResponse> createCustomer(@RequestBody CustomerRegistrationRequest customerRegistrationRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.createCustomer(customerRegistrationRequest));
+    }
 //
 //    PUT /api/v1/customers/{customerId}
 //- Description: Update customer information and trigger re-verification if needed
+    @PutMapping("/{customerNumber}")
+    public ResponseEntity<String> updateCustomerInfo(@PathVariable String customerNumber,
+                                                     @RequestBody CustomerUpdateRequest customerUpdateRequest) {
+        return ResponseEntity.ok(customerService.updateCustomer(customerNumber, customerUpdateRequest));
+    }
 //
 //    GET /api/v1/customers/{customerId}/accounts
 //- Description: Get all accounts associated with a customer (calls Account Service)
-//
-//    GET /api/v1/customers/search
-//- Description: Advanced customer search with complex criteria
-//- Query Params: email, phone, accountNumber
 //
 //    POST /api/v1/customers/{customerId}/documents
 //- Description: Upload customer documents for verification

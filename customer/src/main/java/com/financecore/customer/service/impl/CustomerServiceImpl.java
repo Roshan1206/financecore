@@ -1,15 +1,24 @@
 package com.financecore.customer.service.impl;
 
+import com.financecore.customer.dto.request.CustomerRegistrationRequest;
+import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
+import com.financecore.customer.entity.Address;
 import com.financecore.customer.entity.Customer;
+import com.financecore.customer.entity.CustomerDocument;
+import com.financecore.customer.entity.enums.AddressType;
 import com.financecore.customer.entity.enums.CustomerType;
+import com.financecore.customer.entity.enums.DocumentType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
 import com.financecore.customer.mapper.CustomerMapper;
+import com.financecore.customer.repository.AddressRepository;
+import com.financecore.customer.repository.CustomerDocumentRepository;
 import com.financecore.customer.repository.CustomerRepository;
 import com.financecore.customer.service.CustomerService;
+import com.financecore.customer.util.EnumUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -28,6 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service class for Customer.
@@ -39,13 +49,23 @@ import java.util.List;
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
+    private final AddressRepository addressRepository;
+
     @PersistenceContext
     private final EntityManager entityManager;
 
+    private final EnumUtil enumUtil;
+
+    private final CustomerDocumentRepository customerDocumentRepository;
+
     private final CustomerRepository customerRepository;
 
-    public CustomerServiceImpl(EntityManager entityManager, CustomerRepository customerRepository) {
+    public CustomerServiceImpl(AddressRepository addressRepository, EntityManager entityManager, EnumUtil enumUtil,
+                               CustomerDocumentRepository customerDocumentRepository, CustomerRepository customerRepository) {
+        this.addressRepository = addressRepository;
         this.entityManager = entityManager;
+        this.enumUtil = enumUtil;
+        this.customerDocumentRepository = customerDocumentRepository;
         this.customerRepository = customerRepository;
     }
 
@@ -123,13 +143,56 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
                 () -> {
                     String message = "Customer not found with given Customer number: " + customerNumber;
-                    log.debug(message);
+                    log.error(message);
                     return new  ResponseStatusException(HttpStatus.NOT_FOUND, message);
                 }
         );
         return CustomerMapper.mapToCustomerInfoResponse(customer);
     }
 
+
+    @Override
+    public CustomerInfoResponse createCustomer(CustomerRegistrationRequest customerRegistrationRequest) {
+        CustomerType customerType = enumUtil.getSafeCustomerType(customerRegistrationRequest.getCustomerType()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use INDIVIDUAL OR BUSINESS in customerType")
+        );
+
+        DocumentType documentType = enumUtil.getSafeDocumentType(customerRegistrationRequest.getCustomerDocument().getDocumentType()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use PASSPORT, DRIVING_LICENSE, UTILITY_BILL, AADHAR_CARD in documentType")
+        );
+
+        AddressType addressType = enumUtil.getSafeAddressType(customerRegistrationRequest.getAddress().getAddressType()).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use  HOME, WORK, or MAILING in addressType")
+        );
+
+        Customer customer = CustomerMapper.mapToCustomer(customerRegistrationRequest, customerType);
+        Customer savedCustomer = customerRepository.save(customer);
+
+        Address address = CustomerMapper.mapToAddress(customer, addressType, customerRegistrationRequest.getAddress());
+        CustomerDocument customerDocument = CustomerMapper.mapToCustomerDocument(customer, documentType,
+                customerRegistrationRequest.getCustomerDocument().getDocumentNumber());
+
+        addressRepository.save(address);
+        customerDocumentRepository.save(customerDocument);
+
+        return this.getCustomerInfo(savedCustomer.getCustomerNumber());
+    }
+
+
+    @Override
+    public String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest) {
+        Customer customer = customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
+                () -> {
+                    String message = "Customer not found with given Customer number: " + customerNumber + ". Customer update failed.";
+                    log.error(message);
+                    return new  ResponseStatusException(HttpStatus.NOT_FOUND, message);
+                }
+        );
+        customer.setEmail(customerUpdateRequest.getEmail());
+        customer.setPhoneNumber(customerUpdateRequest.getPhoneNumber());
+        customerRepository.save(customer);
+        return "Customer updated successfully";
+    }
 
     /**
      * Retrieve paginated list of customers with filtering

@@ -1,5 +1,7 @@
 package com.financecore.customer.service;
 
+import com.financecore.customer.dto.request.CustomerRegistrationRequest;
+import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
@@ -37,4 +39,8 @@ public interface CustomerService {
      * @return customer information
      */
     CustomerInfoResponse getCustomerInfo(String customerNumber);
+
+    CustomerInfoResponse createCustomer(CustomerRegistrationRequest customerRegistrationRequest);
+
+    String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest);
 }
