@@ -47,7 +47,7 @@ public class CustomerController {
     }
 
     /**
-     * Retrieve paginated list of customers with filtering
+     * Retrieve paginated list of customers with filtering <br>
      * Query Params: page, size, status, customerType, riskProfile, email, phone, accountNumber
      */
     @GetMapping
@@ -75,20 +75,26 @@ public class CustomerController {
     public ResponseEntity<CustomerInfoResponse> getCustomerInfo(@PathVariable String customerNumber){
         return ResponseEntity.ok(customerService.getCustomerInfo(customerNumber));
     }
-//
-//    POST /api/v1/customers
-//- Description: Create new customer profile with KYC initiation
+
+
+    /**
+     * Create new customer profile with KYC initiation
+     */
     @PostMapping
     public ResponseEntity<CustomerInfoResponse> createCustomer(@RequestBody CustomerRegistrationRequest customerRegistrationRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerService.createCustomer(customerRegistrationRequest));
     }
-//
-//    PUT /api/v1/customers/{customerId}
-//- Description: Update customer information and trigger re-verification if needed
+
+
+    /**
+     * Update customer information <br>
+     * TODO: trigger re-verification if needed
+     */
     @PutMapping("/{customerNumber}")
     public ResponseEntity<String> updateCustomerInfo(@PathVariable String customerNumber,
                                                      @RequestBody CustomerUpdateRequest customerUpdateRequest) {
-        return ResponseEntity.ok(customerService.updateCustomer(customerNumber, customerUpdateRequest));
+        String message = customerService.updateCustomer(customerNumber, customerUpdateRequest);
+        return ResponseEntity.ok(message);
     }
 //
 //    GET /api/v1/customers/{customerId}/accounts
@@ -96,12 +102,17 @@ public class CustomerController {
 //
 //    POST /api/v1/customers/{customerId}/documents
 //- Description: Upload customer documents for verification
-//
-//    GET /api/v1/customers/kyc/pending
-//- Description: Get customers pending KYC verification
-//
-//    PUT /api/v1/customers/{customerId}/kyc-status
-//- Description: Update KYC verification status
+
+
+
+    /**
+     * Update KYC verification status
+     */
+    @PutMapping("/{customerNumber}/kyc-status")
+    public ResponseEntity<String> updateKycStatus(@PathVariable String customerNumber){
+        String message = customerService.updateCustomerKyc(customerNumber);
+        return ResponseEntity.ok(message);
+    }
 //
 //    POST /api/v1/customers/{customerId}/validate
 //- Description: Validate customer exists (for inter-service calls)

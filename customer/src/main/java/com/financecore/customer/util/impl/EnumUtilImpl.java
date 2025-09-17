@@ -10,9 +10,20 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
+/**
+ * Utility implementation class for converting String to desired Enum
+ *
+ * @author Roshan
+ */
 @Component
 public class EnumUtilImpl implements EnumUtil {
 
+    /**
+     * get {@code AddressType} Enum value for address
+     *
+     * @param addressType address type
+     * @return AddressType if valid
+     */
     @Override
     public Optional<AddressType> getSafeAddressType(String addressType) {
         try {
@@ -22,6 +33,13 @@ public class EnumUtilImpl implements EnumUtil {
         }
     }
 
+
+    /**
+     * get {@code CustomerType} Enum value for address
+     *
+     * @param customerType customer type
+     * @return CustomerType if valid
+     */
     @Override
     public Optional<CustomerType> getSafeCustomerType(String customerType) {
         try {
@@ -31,6 +49,13 @@ public class EnumUtilImpl implements EnumUtil {
         }
     }
 
+
+    /**
+     * get {@code DocumentType} Enum value for address
+     *
+     * @param documentType document type
+     * @return DocumentType if valid
+     */
     @Override
     public Optional<DocumentType> getSafeDocumentType(String documentType) {
         try {

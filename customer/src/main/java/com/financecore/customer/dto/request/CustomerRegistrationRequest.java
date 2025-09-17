@@ -4,6 +4,11 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
+/**
+ * CustomerRegistrationRequest DTO for customers with required field
+ *
+ * @author Roshan
+ */
 @Data
 public class CustomerRegistrationRequest {
     private String firstName;

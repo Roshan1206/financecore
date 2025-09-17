@@ -40,7 +40,33 @@ public interface CustomerService {
      */
     CustomerInfoResponse getCustomerInfo(String customerNumber);
 
+
+    /**
+     * Create new customer profile with KYC initiation
+     *
+     * @param customerRegistrationRequest Customer details
+     * @return Detailed customer info
+     */
     CustomerInfoResponse createCustomer(CustomerRegistrationRequest customerRegistrationRequest);
 
+
+    /**
+     * Update customer information
+     *
+     * @param customerNumber customer number
+     * @param customerUpdateRequest Update info
+     *
+     * @return Message
+     */
     String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest);
+
+
+    /**
+     * Update KYC verification status
+     *
+     * @param customerNumber customer number
+     *
+     * @return Message
+     */
+    String updateCustomerKyc(String customerNumber);
 }

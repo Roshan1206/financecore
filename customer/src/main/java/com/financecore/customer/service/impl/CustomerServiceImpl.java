@@ -49,17 +49,35 @@ import java.util.Optional;
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
+    /**
+     * Repository responsible for managing {@code Address}
+     */
     private final AddressRepository addressRepository;
 
+    /**
+     * For creating and executing query
+     */
     @PersistenceContext
     private final EntityManager entityManager;
 
+    /**
+     * Utility interface for Enums
+     */
     private final EnumUtil enumUtil;
 
+    /**
+     * Repository responsible for managing {@code CustomerDocument}
+     */
     private final CustomerDocumentRepository customerDocumentRepository;
 
+    /**
+     * Repository responsible for managing {@code Customer}
+     */
     private final CustomerRepository customerRepository;
 
+    /**
+     * Injecting required dependency via constructor injection
+     */
     public CustomerServiceImpl(AddressRepository addressRepository, EntityManager entityManager, EnumUtil enumUtil,
                                CustomerDocumentRepository customerDocumentRepository, CustomerRepository customerRepository) {
         this.addressRepository = addressRepository;
@@ -140,17 +158,17 @@ public class CustomerServiceImpl implements CustomerService {
      */
     @Override
     public CustomerInfoResponse getCustomerInfo(String customerNumber) {
-        Customer customer = customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
-                () -> {
-                    String message = "Customer not found with given Customer number: " + customerNumber;
-                    log.error(message);
-                    return new  ResponseStatusException(HttpStatus.NOT_FOUND, message);
-                }
-        );
+        Customer customer = getCustomer(customerNumber);
         return CustomerMapper.mapToCustomerInfoResponse(customer);
     }
 
 
+    /**
+     * Create new customer profile with KYC initiation
+     *
+     * @param customerRegistrationRequest Customer details
+     * @return Detailed customer info
+     */
     @Override
     public CustomerInfoResponse createCustomer(CustomerRegistrationRequest customerRegistrationRequest) {
         CustomerType customerType = enumUtil.getSafeCustomerType(customerRegistrationRequest.getCustomerType()).orElseThrow(
@@ -179,20 +197,55 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
 
+    /**
+     * Update customer information
+     *
+     * @param customerNumber customer number
+     * @param customerUpdateRequest Update info
+     *
+     * @return Message
+     */
     @Override
     public String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest) {
-        Customer customer = customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
+        Customer customer = getCustomer(customerNumber);
+        customer.setEmail(customerUpdateRequest.getEmail());
+        customer.setPhoneNumber(customerUpdateRequest.getPhoneNumber());
+        customerRepository.save(customer);
+        return "Customer updated successfully";
+    }
+
+
+    /**
+     * Update KYC verification status
+     *
+     * @param customerNumber customer number
+     * @return Message
+     */
+    @Override
+    public String updateCustomerKyc(String customerNumber) {
+        Customer customer = getCustomer(customerNumber);
+        customer.setKycStatus(Status.VERIFIED);
+        customerRepository.save(customer);
+        return "Customer KYC updated successfully";
+    }
+
+
+    /**
+     * Get Customer details
+     *
+     * @param customerNumber customer number
+     * @return Customer
+     */
+    private Customer getCustomer(String customerNumber) {
+        return customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
                 () -> {
                     String message = "Customer not found with given Customer number: " + customerNumber + ". Customer update failed.";
                     log.error(message);
                     return new  ResponseStatusException(HttpStatus.NOT_FOUND, message);
                 }
         );
-        customer.setEmail(customerUpdateRequest.getEmail());
-        customer.setPhoneNumber(customerUpdateRequest.getPhoneNumber());
-        customerRepository.save(customer);
-        return "Customer updated successfully";
     }
+
 
     /**
      * Retrieve paginated list of customers with filtering
