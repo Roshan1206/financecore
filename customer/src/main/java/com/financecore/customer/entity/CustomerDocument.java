@@ -50,6 +50,9 @@ public class CustomerDocument {
     @Column(name = "document_number", nullable = false)
     private String documentNumber;
 
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
+
     @Column(name = "file_path", nullable = false)
     private String filePath;
 

@@ -73,6 +73,9 @@ create table customer_document (
 
 alter table fc_customer.address alter column customer_id type bigint;
 alter table fc_customer.customer_document alter column customer_id type bigint;
+alter table fc_customer.customer_document add column file_name varchar(100);
+alter table 
+alter table fc_customer.customer_document alter column file_name set not null;
 set search_path to fc_account;
 
 create type account_type_enum as enum ('CURRENT', 'SAVING', 'CREDIT', 'LOAN');

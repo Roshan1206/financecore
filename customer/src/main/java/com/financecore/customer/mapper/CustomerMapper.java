@@ -54,7 +54,7 @@ public class CustomerMapper {
         CustomerDocumentResponse response = new CustomerDocumentResponse();
         response.setDocumentNumber(document.getDocumentNumber());
         response.setDocumentType(document.getDocumentType());
-        response.setFilePath(document.getFilePath());
+        response.setFileName(document.getFileName());
         response.setUploadedAt(document.getUploadedAt());
         response.setVerificationStatus(document.getVerificationStatus());
 
@@ -87,11 +87,14 @@ public class CustomerMapper {
         return address;
     }
 
-    public static CustomerDocument mapToCustomerDocument(Customer customer, DocumentType documentType, String documentNumber){
+    public static CustomerDocument mapToCustomerDocument(Customer customer, DocumentType documentType, String documentNumber,
+                                                         String fileName, String filePath){
         CustomerDocument customerDocument = new CustomerDocument();
         customerDocument.setCustomer(customer);
         customerDocument.setDocumentType(documentType);
         customerDocument.setDocumentNumber(documentNumber);
+        customerDocument.setFileName(fileName);
+        customerDocument.setFilePath(filePath);
         return customerDocument;
     }
 }

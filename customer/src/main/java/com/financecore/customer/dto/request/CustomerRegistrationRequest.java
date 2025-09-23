@@ -18,5 +18,4 @@ public class CustomerRegistrationRequest {
     private String customerType;
     private LocalDate dateOfBirth;
     private AddressRequest address;
-    private CustomerDocumentRequest customerDocument;
 }

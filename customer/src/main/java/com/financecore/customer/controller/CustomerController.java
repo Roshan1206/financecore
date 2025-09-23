@@ -2,10 +2,12 @@ package com.financecore.customer.controller;
 
 import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
+import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
+import com.financecore.customer.entity.enums.DocumentType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
 import com.financecore.customer.service.CustomerService;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Controller class for managing customer via REST APIs.
@@ -99,9 +102,18 @@ public class CustomerController {
 //
 //    GET /api/v1/customers/{customerId}/accounts
 //- Description: Get all accounts associated with a customer (calls Account Service)
-//
-//    POST /api/v1/customers/{customerId}/documents
-//- Description: Upload customer documents for verification
+
+    /**
+     * Upload customer documents for verification
+     */
+    @PostMapping("/{customerNumber}/documents")
+    public ResponseEntity<CustomerDocumentResponse> uploadDocuments(@PathVariable String customerNumber,
+                                                                    @RequestParam("file") MultipartFile file,
+                                                                    @RequestParam DocumentType documentType,
+                                                                    @RequestParam String documentNumber){
+        CustomerDocumentResponse response = customerService.uploadDocuments(customerNumber, file, documentType, documentNumber);
+        return ResponseEntity.ok(response);
+    }
 
 
 

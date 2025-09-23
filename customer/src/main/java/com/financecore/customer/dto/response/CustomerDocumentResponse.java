@@ -20,7 +20,7 @@ public class CustomerDocumentResponse {
 
     private DocumentType documentType;
     private String documentNumber;
-    private String filePath;
+    private String fileName;
     private Status verificationStatus;
     private LocalDateTime uploadedAt;
 }

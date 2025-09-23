@@ -2,6 +2,7 @@ package com.financecore.customer.service.impl;
 
 import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
+import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
@@ -28,16 +29,21 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Service class for Customer.
@@ -74,6 +80,10 @@ public class CustomerServiceImpl implements CustomerService {
      * Repository responsible for managing {@code Customer}
      */
     private final CustomerRepository customerRepository;
+
+
+    @Value("${customer.config.file.upload-dir}")
+    private String uploadDir;
 
     /**
      * Injecting required dependency via constructor injection
@@ -175,10 +185,6 @@ public class CustomerServiceImpl implements CustomerService {
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use INDIVIDUAL OR BUSINESS in customerType")
         );
 
-        DocumentType documentType = enumUtil.getSafeDocumentType(customerRegistrationRequest.getCustomerDocument().getDocumentType()).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use PASSPORT, DRIVING_LICENSE, UTILITY_BILL, AADHAR_CARD in documentType")
-        );
-
         AddressType addressType = enumUtil.getSafeAddressType(customerRegistrationRequest.getAddress().getAddressType()).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use  HOME, WORK, or MAILING in addressType")
         );
@@ -187,11 +193,7 @@ public class CustomerServiceImpl implements CustomerService {
         Customer savedCustomer = customerRepository.save(customer);
 
         Address address = CustomerMapper.mapToAddress(customer, addressType, customerRegistrationRequest.getAddress());
-        CustomerDocument customerDocument = CustomerMapper.mapToCustomerDocument(customer, documentType,
-                customerRegistrationRequest.getCustomerDocument().getDocumentNumber());
-
         addressRepository.save(address);
-        customerDocumentRepository.save(customerDocument);
 
         return this.getCustomerInfo(savedCustomer.getCustomerNumber());
     }
@@ -214,6 +216,44 @@ public class CustomerServiceImpl implements CustomerService {
         return "Customer updated successfully";
     }
 
+
+    /**
+     * Upload customer documents
+     *
+     * @param customerNumber customer number
+     * @param file           Document
+     * @param documentType   document type
+     * @param documentNumber document number
+     * @return {@code CustomerDocumentResponse}
+     */
+    @Override
+    public CustomerDocumentResponse uploadDocuments(String customerNumber, MultipartFile file, DocumentType documentType,
+                                                    String documentNumber) {
+        Customer customer = getCustomer(customerNumber);
+        String fileName = customerNumber + System.currentTimeMillis();
+        String errorMessage = "Something went wrong. Please try again later....";
+
+        java.nio.file.Path uploadPath = Paths.get(uploadDir);
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                log.error("Error creating uploads directory", e.getCause());
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
+            }
+        }
+
+        java.nio.file.Path filePath = uploadPath.resolve(fileName);
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error("Error happened while copying file to directory.", e.getCause());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
+        }
+        CustomerDocument customerDocument = CustomerMapper.mapToCustomerDocument(customer, documentType, documentNumber, fileName, filePath.toString());
+        CustomerDocument savedDocument = customerDocumentRepository.save(customerDocument);
+        return CustomerMapper.mapToCustomerDocumentResponse(savedDocument);
+    }
 
     /**
      * Update KYC verification status
