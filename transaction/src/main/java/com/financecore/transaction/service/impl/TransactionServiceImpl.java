@@ -1,14 +1,20 @@
 package com.financecore.transaction.service.impl;
 
+import com.financecore.transaction.dto.request.SelfTransactionRequest;
+import com.financecore.transaction.dto.response.BalanceResponse;
 import com.financecore.transaction.dto.response.PageResponse;
 import com.financecore.transaction.dto.response.TransactionResponse;
 import com.financecore.transaction.entity.Transaction;
+import com.financecore.transaction.entity.TransactionCategory;
 import com.financecore.transaction.entity.enums.Channel;
+import com.financecore.transaction.entity.enums.ParentCategory;
 import com.financecore.transaction.entity.enums.Status;
 import com.financecore.transaction.entity.enums.TransactionType;
 import com.financecore.transaction.mapper.TransactionMapper;
+import com.financecore.transaction.repoitory.TransactionCategoryRepository;
 import com.financecore.transaction.repoitory.TransactionRepository;
 import com.financecore.transaction.service.TransactionService;
+import com.financecore.transaction.service.client.AccountFeignClient;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -21,6 +27,7 @@ import jakarta.persistence.criteria.Root;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,6 +45,8 @@ import java.util.Objects;
 @Service
 public class TransactionServiceImpl implements TransactionService {
 
+    private final AccountFeignClient accountFeignClient;
+
     /**
      * To perform db operations
      */
@@ -50,12 +59,20 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
 
 
+    private final TransactionCategoryRepository transactionCategoryRepository;
+
+
     /**
      * Injecting required dependency via constructor injection
      */
-    public TransactionServiceImpl(EntityManager entityManager, TransactionRepository transactionRepository) {
+    public TransactionServiceImpl(AccountFeignClient accountFeignClient,
+                                  EntityManager entityManager,
+                                  TransactionRepository transactionRepository,
+                                  TransactionCategoryRepository transactionCategoryRepository) {
+        this.accountFeignClient = accountFeignClient;
         this.entityManager = entityManager;
         this.transactionRepository = transactionRepository;
+        this.transactionCategoryRepository = transactionCategoryRepository;
     }
 
 
@@ -202,5 +219,26 @@ public class TransactionServiceImpl implements TransactionService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found with given id: " + transactionId)
         );
         return TransactionMapper.mapToTransactionResponse(transaction);
+    }
+
+
+    @Override
+    public void createWithdrawal(SelfTransactionRequest selfTransactionRequest) {
+        ResponseEntity<BalanceResponse> clientAccountBalance = accountFeignClient.getAccountBalance(selfTransactionRequest.getAccountNumber());
+        if (!clientAccountBalance.getStatusCode().is2xxSuccessful() || null == clientAccountBalance.getBody()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Something bad happened....");
+        }
+        BigDecimal currentBalance = clientAccountBalance.getBody().getAvailableBalance();
+        BigDecimal amount = selfTransactionRequest.getAmount();
+        if (currentBalance.compareTo(amount) > 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Account balance is not sufficient for transaction");
+        }
+        BigDecimal newBalance = currentBalance.subtract(amount);
+        Channel channel = Channel.BRANCH;
+        TransactionType transactionType = TransactionType.DEBIT;
+
+        TransactionCategory transactionCategory = new TransactionCategory("Withdrawal", ParentCategory.TRANSFER);
+        TransactionCategory savedTransactionCategory = transactionCategoryRepository.save(transactionCategory);
+
     }
 }

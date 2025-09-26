@@ -23,7 +23,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 @Configuration
-public class AuthSecurityConfiguration {
+public class ApplicationSecurityConfiguration {
 
     /**
      * Injecting issuer url value through properties file
@@ -35,14 +35,13 @@ public class AuthSecurityConfiguration {
      * Security filter chain for registering/retrieving clients info
      */
     @Bean
-    @Order(2)
-    public SecurityFilterChain clientSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    @Order(3)
+    public SecurityFilterChain applicationSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .anyRequest().authenticated())
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
-                .formLogin(Customizer.withDefaults())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/auth/**"))
                 .httpBasic(Customizer.withDefaults());
         return httpSecurity.build();
     }

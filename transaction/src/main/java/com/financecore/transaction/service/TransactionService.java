@@ -1,5 +1,6 @@
 package com.financecore.transaction.service;
 
+import com.financecore.transaction.dto.request.SelfTransactionRequest;
 import com.financecore.transaction.dto.response.PageResponse;
 import com.financecore.transaction.dto.response.TransactionResponse;
 import com.financecore.transaction.entity.enums.Channel;
@@ -42,4 +43,6 @@ public interface TransactionService {
      * @return transaction
      */
     TransactionResponse getDetailedTransaction(long transactionId);
+
+    void createWithdrawal(SelfTransactionRequest selfTransactionRequest);
 }

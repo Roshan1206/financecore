@@ -107,4 +107,23 @@ public class Transaction {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Transaction(String reference, long fromAccountId, long toAccountId, TransactionType type,
+                       BigDecimal amount, String currencyCode, String description, TransactionCategory category,
+                       Channel channel, String referenceNumber, String merchantInfo, String location) {
+        this.reference = reference;
+        this.fromAccountId = fromAccountId;
+        this.toAccountId = toAccountId;
+        this.type = type;
+        this.amount = amount;
+        this.currencyCode = currencyCode;
+        this.description = description;
+        this.category = category;
+        this.status = Status.COMPLETED;
+        this.date = LocalDate.now();
+        this.channel = channel;
+        this.referenceNumber = referenceNumber;
+        this.merchantInfo = merchantInfo;
+        this.location = location;
+    }
 }

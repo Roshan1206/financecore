@@ -58,4 +58,16 @@ public class TransactionCategory {
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private Set<Transaction> transactions = new HashSet<>();
+
+
+    public TransactionCategory(String name, ParentCategory parentCategory){
+        this(name, parentCategory, true);
+    }
+
+
+    public TransactionCategory(String name, ParentCategory parentCategory, boolean isActive){
+        this.name = name;
+        this.parentCategory = parentCategory;
+        this.isActive = isActive;
+    }
 }

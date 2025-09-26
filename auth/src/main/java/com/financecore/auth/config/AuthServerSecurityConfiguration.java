@@ -51,7 +51,7 @@ public class AuthServerSecurityConfiguration {
      * Building OAuth2 Open ID Connect authorization configuration wth default properties
      */
     @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 

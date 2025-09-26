@@ -157,29 +157,37 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public BalanceResponse getAccountBalance(String accountNumber) {
-        String query = "SELECT a.accountNumber, a.accountStatus, a.balance, a.availableBalance, a.customInterestRate, a.customMinimumBalance, "
-                + "a.customOverDraftLimit, ap.productName, ap.minimumBalance, ap.interestRate, ap.overdraftLimit FROM Account a LEFT JOIN "
-                + "AccountProduct ap ON a.accountProduct.id = ap.id WHERE a.accountNumber = :accountNumber";
-        Tuple result = entityManager.createQuery(query, Tuple.class)
-                .setParameter("accountNumber", accountNumber)
-                .getSingleResult();
+//        String query = "SELECT a.accountNumber, a.balance, a.availableBalance, a.customInterestRate, a.customMinimumBalance, "
+//                + "a.customOverDraftLimit, ap.productName, ap.minimumBalance, ap.interestRate, ap.overdraftLimit FROM Account a LEFT JOIN "
+//                + "AccountProduct ap ON a.accountProduct.id = ap.id WHERE a.accountNumber = :accountNumber";
+//        Tuple result = entityManager.createQuery(query, Tuple.class)
+//                .setParameter("accountNumber", accountNumber)
+//                .getSingleResult();
 
-        AccountStatus status = result.get(1, AccountStatus.class);
-        BigDecimal balance = result.get(2, BigDecimal.class);
-        BigDecimal availableBalance = result.get(3, BigDecimal.class);
-        BigDecimal customInterestRate = result.get(4, BigDecimal.class);
-        BigDecimal customMinimumBalance = result.get(5, BigDecimal.class);
-        BigDecimal customOverDraftLimit = result.get(6, BigDecimal.class);
-        String productName = result.get(7, String.class);
-        BigDecimal minimumBalance = result.get(8, BigDecimal.class);
-        BigDecimal interestRate = result.get(9, BigDecimal.class);
-        BigDecimal overdraftLimit = result.get(10, BigDecimal.class);
-        
-        BigDecimal accMinBal = customMinimumBalance == null ? minimumBalance : customMinimumBalance;
-        BigDecimal accIntRate = customInterestRate == null ? interestRate : customInterestRate;
-        BigDecimal accODLimit = customOverDraftLimit == null ? overdraftLimit : customOverDraftLimit;
+        CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<BalanceResponse> criteriaQuery = builder.createQuery(BalanceResponse.class);
+        Root<Account> root = criteriaQuery.from(Account.class);
 
-        return new BalanceResponse(accountNumber, status, productName, balance, availableBalance, accIntRate, accMinBal, accODLimit);
+        Predicate predicate = builder.equal(root.get("accountNumber"), accountNumber);
+        criteriaQuery.where(builder.and(predicate));
+        return entityManager.createQuery(criteriaQuery).getSingleResult();
+
+//        AccountStatus status = result.get(1, AccountStatus.class);
+//        BigDecimal balance = result.get(2, BigDecimal.class);
+//        BigDecimal availableBalance = result.get(3, BigDecimal.class);
+//        BigDecimal customInterestRate = result.get(4, BigDecimal.class);
+//        BigDecimal customMinimumBalance = result.get(5, BigDecimal.class);
+//        BigDecimal customOverDraftLimit = result.get(6, BigDecimal.class);
+//        String productName = result.get(7, String.class);
+//        BigDecimal minimumBalance = result.get(8, BigDecimal.class);
+//        BigDecimal interestRate = result.get(9, BigDecimal.class);
+//        BigDecimal overdraftLimit = result.get(10, BigDecimal.class);
+//
+//        BigDecimal accMinBal = customMinimumBalance == null ? minimumBalance : customMinimumBalance;
+//        BigDecimal accIntRate = customInterestRate == null ? interestRate : customInterestRate;
+//        BigDecimal accODLimit = customOverDraftLimit == null ? overdraftLimit : customOverDraftLimit;
+//
+//        return new BalanceResponse(accountNumber, status, productName, balance, availableBalance, accIntRate, accMinBal, accODLimit);
     }
 
 
