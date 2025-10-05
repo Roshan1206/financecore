@@ -1,11 +1,15 @@
 package com.financecore.transaction.controller;
 
+import com.financecore.transaction.dto.request.SelfTransferRequest;
+import com.financecore.transaction.dto.request.TransferRequest;
 import com.financecore.transaction.dto.response.PageResponse;
 import com.financecore.transaction.dto.response.TransactionResponse;
+import com.financecore.transaction.dto.response.TransferResponse;
 import com.financecore.transaction.entity.enums.Channel;
 import com.financecore.transaction.entity.enums.Status;
 import com.financecore.transaction.entity.enums.TransactionType;
 import com.financecore.transaction.service.TransactionService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,5 +75,47 @@ public class TransactionController {
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionResponse> getDetailedTransaction(@PathVariable long transactionId){
         return ResponseEntity.ok(transactionService.getDetailedTransaction(transactionId));
+    }
+
+
+    /**
+     * Create withdrawal transaction.
+     *
+     * @param accountNumber user account number
+     * @param selfTransferRequest info required to create withdrawal
+     */
+    @PostMapping("/{accountNumber}/withdrawal")
+    public ResponseEntity<TransferResponse> createWithdrawal(@PathVariable String accountNumber,
+                                                             @RequestBody @Valid SelfTransferRequest selfTransferRequest){
+        TransferResponse response = transactionService.createWithdrawal(accountNumber, selfTransferRequest);
+        return ResponseEntity.ok(response);
+    }
+
+
+    /**
+     * Create deposit transaction.
+     *
+     * @param accountNumber user account number
+     * @param selfTransferRequest info required to create deposit
+     */
+    @PostMapping("/{accountNumber}/deposit")
+    public ResponseEntity<TransferResponse> createDeposit(@PathVariable String accountNumber,
+                                                          @RequestBody @Valid SelfTransferRequest selfTransferRequest){
+        TransferResponse response = transactionService.createDeposit(accountNumber, selfTransferRequest);
+        return ResponseEntity.ok(response);
+    }
+
+
+    /**
+     * Create transfer transaction
+     *
+     * @param accountNumber user account number
+     * @param transferRequest info required to create transfer
+     */
+    @PostMapping("/{accountNumber}/transfer")
+    public ResponseEntity<TransferResponse> createTransfer(@PathVariable String accountNumber,
+                                                           @RequestBody @Valid TransferRequest transferRequest){
+        TransferResponse response = transactionService.createTransfer(accountNumber, transferRequest);
+        return ResponseEntity.ok(response);
     }
 }

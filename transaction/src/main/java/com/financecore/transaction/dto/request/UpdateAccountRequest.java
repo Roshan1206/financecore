@@ -6,11 +6,20 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+
+/**
+ * DTO class for updating account balance
+ *
+ * @author Roshan
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SelfTransactionRequest {
+public class UpdateAccountRequest {
 
-    private String accountNumber;
+    private String toAccountNumber;
+
+    private String operation;
+
     private BigDecimal amount;
 }

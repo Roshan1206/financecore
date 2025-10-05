@@ -1,8 +1,10 @@
 package com.financecore.transaction.service;
 
-import com.financecore.transaction.dto.request.SelfTransactionRequest;
+import com.financecore.transaction.dto.request.SelfTransferRequest;
+import com.financecore.transaction.dto.request.TransferRequest;
 import com.financecore.transaction.dto.response.PageResponse;
 import com.financecore.transaction.dto.response.TransactionResponse;
+import com.financecore.transaction.dto.response.TransferResponse;
 import com.financecore.transaction.entity.enums.Channel;
 import com.financecore.transaction.entity.enums.Status;
 import com.financecore.transaction.entity.enums.TransactionType;
@@ -44,5 +46,30 @@ public interface TransactionService {
      */
     TransactionResponse getDetailedTransaction(long transactionId);
 
-    void createWithdrawal(SelfTransactionRequest selfTransactionRequest);
+
+    /**
+     * Create withdrawal for self
+     *
+     * @param accountNumber account number
+     * @param selfTransferRequest channel and amount
+     */
+    TransferResponse createWithdrawal(String accountNumber, SelfTransferRequest selfTransferRequest);
+
+
+    /**
+     * Create deposit for self
+     *
+     * @param accountNumber account number
+     * @param selfTransferRequest channel and amount
+     */
+    TransferResponse createDeposit(String accountNumber, SelfTransferRequest selfTransferRequest);
+
+
+    /**
+     * Create deposit for self
+     *
+     * @param accountNumber account number
+     * @param transferRequest account number, channel and amount
+     */
+    TransferResponse createTransfer(String accountNumber, TransferRequest transferRequest);
 }

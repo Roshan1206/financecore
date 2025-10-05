@@ -270,16 +270,16 @@ GET /api/v1/transactions - Completed
 GET /api/v1/transactions/{transactionId} - Completed
 - Description: Get detailed transaction information with full audit trail
 
-POST /api/v1/transactions/transfer
+POST /api/v1/transactions/transfer - Completed
 - Description: Process fund transfer (validates accounts via Account Service)
 
-POST /api/v1/transactions/deposit
+POST /api/v1/transactions/deposit - Completed
 - Description: Process deposit transaction
 
-POST /api/v1/transactions/withdrawal
+POST /api/v1/transactions/withdrawal - Completed
 - Description: Process withdrawal transaction
 
-GET /api/v1/transactions/account/{accountId} 
+GET /api/v1/transactions/account/{accountId} - Completed
 - Description: Get transaction history for specific account
 - can be executed with /api/v1/transactions using query params
 
@@ -366,7 +366,7 @@ GET /api/v1/transactions/suspicious
                           ↓
                     Load Balancer
                           ↓
-                    Gateway Server (8080) ← Auth Server (8090)
+                    Gateway Server (8080) ← Auth Server (8090) -> PostgreSQL (auth_db)
                           ↓                      ↑
                     Eureka Server (8761) ← Config Server (8888)
                           ↓

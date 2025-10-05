@@ -123,3 +123,5 @@ INSERT INTO fc_customer.customer_document (customer_id, document_type, document_
 (1008, 'PASSPORT', 'H3456789', '/documents/customer/1008/passport_h3456789.pdf', 'VERIFIED', '2024-01-21 13:45:00'),
 (1009, 'DRIVING_LICENSE', 'KL0720110098765', '/documents/customer/1009/license_kl0720110098765.pdf', 'VERIFIED', '2024-01-22 10:30:00'),
 (1001, 'PASSPORT', 'G2345678', '/documents/customer/1001/passport_g2345678.pdf', 'VERIFIED', '2024-01-24 12:30:00');
+
+UPDATE fc_account.account SET account_number = REPLACE(account_number, 'ACC', '');

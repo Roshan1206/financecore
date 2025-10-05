@@ -47,7 +47,7 @@ public class Transaction {
     @Column(name = "transaction_id")
     private long id;
 
-    @Column(name = "transaction_reference", unique = true, nullable = false)
+    @Column(name = "transaction_reference")
     private String reference;
 
     @Column(name = "from_account_id", nullable = false)
@@ -91,12 +91,14 @@ public class Transaction {
     @Column(name = "channel", columnDefinition = "channel_enum", nullable = false)
     private Channel channel;
 
-    @Column(name = "reference_number")
+    @Column(name = "reference_number", unique = true, nullable = false)
     private String referenceNumber;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "merchant_info", columnDefinition = "jsonb")
     private String merchantInfo;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "location", columnDefinition = "jsonb")
     private String location;
 
@@ -110,7 +112,8 @@ public class Transaction {
 
     public Transaction(String reference, long fromAccountId, long toAccountId, TransactionType type,
                        BigDecimal amount, String currencyCode, String description, TransactionCategory category,
-                       Channel channel, String referenceNumber, String merchantInfo, String location) {
+                       Channel channel, String merchantInfo, String location) {
+        String referenceNumber = "TXN" + (System.currentTimeMillis() + fromAccountId);
         this.reference = reference;
         this.fromAccountId = fromAccountId;
         this.toAccountId = toAccountId;
@@ -119,11 +122,22 @@ public class Transaction {
         this.currencyCode = currencyCode;
         this.description = description;
         this.category = category;
-        this.status = Status.COMPLETED;
+        this.status = Status.PENDING;
         this.date = LocalDate.now();
         this.channel = channel;
         this.referenceNumber = referenceNumber;
         this.merchantInfo = merchantInfo;
         this.location = location;
+    }
+
+    public Transaction(String accountNumber, BigDecimal amount, Channel channel, TransactionType transactionType,
+                       TransactionCategory transactionCategory, String reference) {
+        this(accountNumber, accountNumber, amount, channel, transactionType, transactionCategory, reference);
+    }
+
+    public Transaction(String fromAccountNumber, String toAccountNumber, BigDecimal amount, Channel channel,
+                       TransactionType transactionType, TransactionCategory transactionCategory, String reference) {
+        this(reference, Long.parseLong(fromAccountNumber), Long.parseLong(toAccountNumber), transactionType, amount,
+                "INR", null, transactionCategory, channel, null, null);
     }
 }

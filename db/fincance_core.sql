@@ -114,7 +114,6 @@ create table account (
 		fk_product foreign key (product_id)
 			references account_product(product_id)		
 );
-alter table fc_account.account alter column account_number set default 'ACC' || nextval('fc_account.account_account_id_seq');
 
 create table account_beneficiary (
 	beneficiary_id BIGSERIAL primary key,
@@ -137,6 +136,8 @@ alter table fc_account.account alter column product_id type bigint;
 alter table fc_account.account_beneficiary alter column account_id type bigint;
 alter table fc_account.account alter column custom_minimum_balance type decimal(10,2);
 alter table fc_account.account_beneficiary drop constraint account_beneficiary_account_id_key;
+create sequence account_number_seq start with 10000000000;
+alter table fc_account.account alter column account_number set default nextval('account_number_seq');
 
 set search_path to fc_transaction;
 

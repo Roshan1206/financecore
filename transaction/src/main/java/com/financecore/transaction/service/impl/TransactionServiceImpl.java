@@ -1,9 +1,13 @@
 package com.financecore.transaction.service.impl;
 
-import com.financecore.transaction.dto.request.SelfTransactionRequest;
+import com.financecore.transaction.constants.Constant;
+import com.financecore.transaction.dto.request.SelfTransferRequest;
+import com.financecore.transaction.dto.request.TransferRequest;
+import com.financecore.transaction.dto.request.UpdateAccountRequest;
 import com.financecore.transaction.dto.response.BalanceResponse;
 import com.financecore.transaction.dto.response.PageResponse;
 import com.financecore.transaction.dto.response.TransactionResponse;
+import com.financecore.transaction.dto.response.TransferResponse;
 import com.financecore.transaction.entity.Transaction;
 import com.financecore.transaction.entity.TransactionCategory;
 import com.financecore.transaction.entity.enums.Channel;
@@ -24,6 +28,7 @@ import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -35,13 +40,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Service class for transactions.
  *
  * @author Roshan
  */
+@Slf4j
 @Service
 public class TransactionServiceImpl implements TransactionService {
 
@@ -130,6 +136,101 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     /**
+     * Get detailed transaction information with full audit trail
+     *
+     * @param transactionId transaction ID
+     * @return transaction
+     */
+    @Override
+    public TransactionResponse getDetailedTransaction(long transactionId) {
+        Transaction transaction = transactionRepository.findById(transactionId).orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found with given id: " + transactionId)
+        );
+        return TransactionMapper.mapToTransactionResponse(transaction);
+    }
+
+
+    /**
+     * Create withdrawal for self
+     *
+     * @param accountNumber account number
+     * @param selfTransferRequest account number and amount
+     */
+    @Override
+    public TransferResponse createWithdrawal(String accountNumber, SelfTransferRequest selfTransferRequest) {
+        log.info("Withdrawal initiated...");
+        validateAccountNumberAndBalance(selfTransferRequest.getAmount(), accountNumber);
+        Channel channel = mapToChannel(selfTransferRequest.getChannel());
+        TransactionType transactionType = TransactionType.DEBIT;
+
+        TransactionCategory transactionCategory = new TransactionCategory(Constant.WITHDRAWAL, ParentCategory.TRANSFER);
+        TransactionCategory savedTransactionCategory = transactionCategoryRepository.save(transactionCategory);
+        BigDecimal amount = selfTransferRequest.getAmount();
+        updateAccount(accountNumber, Constant.DEBIT, amount);
+        Transaction transaction = new Transaction(accountNumber, amount, channel, transactionType, savedTransactionCategory, null);
+        transaction.setStatus(Status.COMPLETED);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        transactionRepository.save(savedTransaction);
+        return TransactionMapper.createTransferResponse(savedTransaction);
+    }
+
+
+    /**
+     * Create deposit for self
+     *
+     * @param accountNumber account number
+     * @param selfTransferRequest account number and amount
+     */
+    @Override
+    public TransferResponse createDeposit(String accountNumber, SelfTransferRequest selfTransferRequest) {
+        log.info("Deposit initiated...");
+        validateAccountNumber(accountNumber);
+        Channel channel = mapToChannel(selfTransferRequest.getChannel());
+        TransactionType transactionType = TransactionType.CREDIT;
+
+        TransactionCategory transactionCategory = new TransactionCategory(Constant.DEPOSIT, ParentCategory.TRANSFER);
+        TransactionCategory savedTransactionCategory = transactionCategoryRepository.save(transactionCategory);
+        BigDecimal amount = selfTransferRequest.getAmount();
+        Transaction transaction = new Transaction(accountNumber, amount, channel, transactionType, savedTransactionCategory, null);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        updateAccount(accountNumber, Constant.CREDIT, amount);
+        savedTransaction.setStatus(Status.COMPLETED);
+        transactionRepository.save(savedTransaction);
+        return TransactionMapper.createTransferResponse(savedTransaction);
+    }
+
+
+    /**
+     * Create deposit for self
+     *
+     * @param accountNumber   account number
+     * @param transferRequest account number, channel and amount
+     */
+    @Override
+    public TransferResponse createTransfer(String accountNumber, TransferRequest transferRequest) {
+        log.info("Transfer initiated...");
+        BigDecimal amount = transferRequest.getAmount();
+        String toAccountNumber = transferRequest.getToAccountNumber();
+
+        validateAccountNumberAndBalance(amount, accountNumber);
+        validateAccountNumber(toAccountNumber);
+
+        Channel channel = mapToChannel(transferRequest.getChannel());
+        TransactionType transactionType = TransactionType.TRANSFER;
+
+        updateAccount(accountNumber, Constant.DEBIT, amount);
+        TransactionCategory transactionCategory = new TransactionCategory(Constant.TRANSFER, ParentCategory.TRANSFER);
+        TransactionCategory savedTransactionCategory = transactionCategoryRepository.save(transactionCategory);
+        Transaction transaction = new Transaction(accountNumber, toAccountNumber, amount, channel, transactionType, savedTransactionCategory, null);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        updateAccount(toAccountNumber, Constant.CREDIT, amount);
+        savedTransaction.setStatus(Status.COMPLETED);
+        transactionRepository.save(savedTransaction);
+        return TransactionMapper.createTransferResponse(savedTransaction);
+    }
+
+
+    /**
      * Get number of transaction for a particular account for paging
      *
      * @param accountId account from which transactions happened
@@ -145,6 +246,7 @@ public class TransactionServiceImpl implements TransactionService {
      */
     private long getTotalCount(String accountId, LocalDate fromDate, LocalDate toDate, BigDecimal amount, TransactionType type,
                                Status status, Channel channel, CriteriaBuilder cb){
+        log.debug("Getting total rows for transaction");
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Transaction> transactionRoot = query.from(Transaction.class);
 
@@ -158,25 +260,27 @@ public class TransactionServiceImpl implements TransactionService {
     /**
      * Apply filters in transaction query
      *
-     * @param accountId account from which transactions happened
-     * @param fromDate transactions from date
-     * @param toDate transactions till date
-     * @param amount transaction amount
-     * @param type transaction type
-     * @param status transaction status
-     * @param channel channel from which transaction happened
-     * @param cb CriteriaBuilder for creating query
+     * @param accountId       account from which transactions happened
+     * @param fromDate        transactions from date
+     * @param toDate          transactions till date
+     * @param amount          transaction amount
+     * @param type            transaction type
+     * @param status          transaction status
+     * @param channel         channel from which transaction happened
+     * @param cb              CriteriaBuilder for creating query
      * @param transactionRoot root entity for transaction
-     * @param query query
+     * @param query           query
      */
     private void createFilters(String accountId, LocalDate fromDate, LocalDate toDate, BigDecimal amount, TransactionType type, Status status, Channel channel,
                                CriteriaBuilder cb, Root<Transaction> transactionRoot, CriteriaQuery<?> query) {
+        log.debug("Adding required filter while building query for search query");
         List<Predicate> predicates = new ArrayList<>();
 
         if (accountId != null){
-            long accId = transactionRepository.getAccountId(Long.parseLong(accountId)).orElseThrow(
-                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account id not found. Account id: " + accountId)
-            );
+            Optional<Long> accId = transactionRepository.getAccountId(Long.parseLong(accountId));
+            if (accId.isEmpty()){
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account id not found. Account id: " + accountId);
+            }
             predicates.add(cb.equal(transactionRoot.get("fromAccountId"), accountId));
         }
         if (fromDate != null && fromDate.isBefore(LocalDate.now())){
@@ -208,37 +312,70 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     /**
-     * Get detailed transaction information with full audit trail
+     * Validate account balance after validating account
      *
-     * @param transactionId transaction ID
-     * @return transaction
+     * @param amount transaction amount
+     * @param accountNumber account number
      */
-    @Override
-    public TransactionResponse getDetailedTransaction(long transactionId) {
-        Transaction transaction = transactionRepository.findById(transactionId).orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found with given id: " + transactionId)
-        );
-        return TransactionMapper.mapToTransactionResponse(transaction);
+    private void validateAccountNumberAndBalance(BigDecimal amount, String accountNumber) {
+        validateAccountNumber(accountNumber);
+        log.debug("Checking whether account has required balance for transaction");
+        ResponseEntity<BalanceResponse> accountBalance = accountFeignClient.getAccountBalance(accountNumber);
+        if (!accountBalance.getStatusCode().is2xxSuccessful() || null == accountBalance.getBody()){
+            log.error("Cannot retrieve account balance");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something bad happened....");
+        }
+        BigDecimal currentBalance = accountBalance.getBody().getAvailableBalance();
+        if (currentBalance.compareTo(amount) < 0){
+            log.error(Constant.INSUFFICIENT_BALANCE);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, Constant.INSUFFICIENT_BALANCE);
+        }
     }
 
 
-    @Override
-    public void createWithdrawal(SelfTransactionRequest selfTransactionRequest) {
-        ResponseEntity<BalanceResponse> clientAccountBalance = accountFeignClient.getAccountBalance(selfTransactionRequest.getAccountNumber());
-        if (!clientAccountBalance.getStatusCode().is2xxSuccessful() || null == clientAccountBalance.getBody()){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Something bad happened....");
+    /**
+     * Validate account balance after validating account
+     *
+     * @param accountNumber account number
+     */
+    private void validateAccountNumber(String accountNumber) {
+        log.debug("Validating account through accounts service");
+        boolean isTransferAccountValid = accountFeignClient.validateAccount(accountNumber);
+        if (!isTransferAccountValid){
+            log.error(Constant.INVALID_ACCOUNT + "{}", accountNumber);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, Constant.INVALID_ACCOUNT + accountNumber);
         }
-        BigDecimal currentBalance = clientAccountBalance.getBody().getAvailableBalance();
-        BigDecimal amount = selfTransactionRequest.getAmount();
-        if (currentBalance.compareTo(amount) > 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Account balance is not sufficient for transaction");
-        }
-        BigDecimal newBalance = currentBalance.subtract(amount);
-        Channel channel = Channel.BRANCH;
-        TransactionType transactionType = TransactionType.DEBIT;
+    }
 
-        TransactionCategory transactionCategory = new TransactionCategory("Withdrawal", ParentCategory.TRANSFER);
-        TransactionCategory savedTransactionCategory = transactionCategoryRepository.save(transactionCategory);
 
+    /**
+     * Send request to accounts service to update balance
+     *
+     * @param accountNumber account number
+     * @param operation credit/debit
+     * @param amount amount to be updated
+     */
+    private void updateAccount(String accountNumber, String operation, BigDecimal amount) {
+        log.debug("Sending HTTP request to update account balance for account number {}", accountNumber);
+        UpdateAccountRequest updateAccountRequest = new UpdateAccountRequest(accountNumber, operation, amount);
+        accountFeignClient.updateAccountBalance(accountNumber, updateAccountRequest);
+    }
+
+
+    /**
+     * Map to Channel Enum
+     *
+     * @param channel channel value
+     */
+    private Channel mapToChannel(String channel) {
+        String channelValue = channel.trim().toUpperCase();
+        return switch (channelValue) {
+            case "ATM" -> Channel.ATM;
+            case "ONLINE" -> Channel.ONLINE;
+            case "MOBILE" -> Channel.MOBILE;
+            case "UPI" -> Channel.UPI;
+            case "BRANCH" -> Channel.BRANCH;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Channel value is not correct");
+        };
     }
 }

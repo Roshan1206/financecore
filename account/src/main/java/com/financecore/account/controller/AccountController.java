@@ -1,5 +1,6 @@
 package com.financecore.account.controller;
 
+import com.financecore.account.dto.request.UpdateAccountRequest;
 import com.financecore.account.dto.response.AccountsResponse;
 import com.financecore.account.dto.response.BalanceResponse;
 import com.financecore.account.dto.response.PageResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -103,5 +105,24 @@ public class AccountController {
     public ResponseEntity<String> freezeAccount(@PathVariable String accountNumber){
         String message = accountService.updateAccountStatus(accountNumber, AccountStatus.SUSPENDED);
         return ResponseEntity.ok(message);
+    }
+
+
+    /**
+     * Update account balance. Called using transaction service
+     */
+    @PostMapping("/{accountNumber}/transaction")
+    public void updateAccountBalance(@PathVariable String accountNumber,
+                                     @RequestBody UpdateAccountRequest updateAccountRequest){
+        accountService.updateAccountBalance(accountNumber, updateAccountRequest);
+    }
+
+
+    /**
+     * Validate if account exist and is in ACTIVE state
+     */
+    @PostMapping("/{accountNumber}/validate")
+    public boolean validateAccount(@PathVariable String accountNumber){
+        return accountService.isAccountValid(accountNumber);
     }
 }

@@ -1,5 +1,6 @@
 package com.financecore.account.service;
 
+import com.financecore.account.dto.request.UpdateAccountRequest;
 import com.financecore.account.dto.response.BalanceResponse;
 import com.financecore.account.dto.response.AccountsResponse;
 import com.financecore.account.dto.response.PageResponse;
@@ -53,4 +54,20 @@ public interface AccountService {
      * @return Balance response
      */
     BalanceResponse getAccountBalance(String accountNumber);
+
+
+    /**
+     * Update account balance.
+     *
+     * @param updateAccountRequest update info
+     */
+    void updateAccountBalance(String accountNumber, UpdateAccountRequest updateAccountRequest);
+
+
+    /**
+     * check if account exists or not
+     *
+     * @param accountNumber account number
+     */
+    boolean isAccountValid(String accountNumber);
 }

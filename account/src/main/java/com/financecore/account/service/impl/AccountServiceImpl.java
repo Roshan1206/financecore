@@ -1,5 +1,7 @@
 package com.financecore.account.service.impl;
 
+import com.financecore.account.constant.Constants;
+import com.financecore.account.dto.request.UpdateAccountRequest;
 import com.financecore.account.dto.response.BalanceResponse;
 import com.financecore.account.dto.response.AccountsResponse;
 import com.financecore.account.dto.response.PageResponse;
@@ -68,14 +70,13 @@ public class AccountServiceImpl implements AccountService {
     /**
      * Filter and fetch accounts based on requirements.
      *
-     * @param status account current status
-     * @param type account product type
+     * @param status    account current status
+     * @param type      account product type
      * @param minAmount minimum account balance
      * @param maxAmount account balance
-     * @param fromDate from when
-     * @param toDate till when
-     * @param pageable page no, size and sorting details
-     *
+     * @param fromDate  from when
+     * @param toDate    till when
+     * @param pageable  page no, size and sorting details
      * @return get paginated accounts
      */
     @Override
@@ -136,12 +137,7 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public String updateAccountStatus(String accountNumber, AccountStatus accountStatus) {
-        Account account = accountRepository.findByAccountNumber(accountNumber).orElseThrow(
-                () -> {
-                    log.error("Account not found with given account number: {}", accountNumber);
-                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found with given account number: " + accountNumber);
-                }
-        );
+        Account account = getAccount(accountNumber);
         account.setAccountStatus(accountStatus);
         accountRepository.save(account);
         return "Account updated successfully";
@@ -157,37 +153,82 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public BalanceResponse getAccountBalance(String accountNumber) {
-//        String query = "SELECT a.accountNumber, a.balance, a.availableBalance, a.customInterestRate, a.customMinimumBalance, "
-//                + "a.customOverDraftLimit, ap.productName, ap.minimumBalance, ap.interestRate, ap.overdraftLimit FROM Account a LEFT JOIN "
-//                + "AccountProduct ap ON a.accountProduct.id = ap.id WHERE a.accountNumber = :accountNumber";
-//        Tuple result = entityManager.createQuery(query, Tuple.class)
-//                .setParameter("accountNumber", accountNumber)
-//                .getSingleResult();
-
         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<BalanceResponse> criteriaQuery = builder.createQuery(BalanceResponse.class);
         Root<Account> root = criteriaQuery.from(Account.class);
 
+        criteriaQuery.select(builder.construct(
+                BalanceResponse.class,
+                root.get("accountNumber"),
+                root.get("balance"),
+                root.get("availableBalance")
+        ));
+
         Predicate predicate = builder.equal(root.get("accountNumber"), accountNumber);
         criteriaQuery.where(builder.and(predicate));
         return entityManager.createQuery(criteriaQuery).getSingleResult();
+    }
 
-//        AccountStatus status = result.get(1, AccountStatus.class);
-//        BigDecimal balance = result.get(2, BigDecimal.class);
-//        BigDecimal availableBalance = result.get(3, BigDecimal.class);
-//        BigDecimal customInterestRate = result.get(4, BigDecimal.class);
-//        BigDecimal customMinimumBalance = result.get(5, BigDecimal.class);
-//        BigDecimal customOverDraftLimit = result.get(6, BigDecimal.class);
-//        String productName = result.get(7, String.class);
-//        BigDecimal minimumBalance = result.get(8, BigDecimal.class);
-//        BigDecimal interestRate = result.get(9, BigDecimal.class);
-//        BigDecimal overdraftLimit = result.get(10, BigDecimal.class);
-//
-//        BigDecimal accMinBal = customMinimumBalance == null ? minimumBalance : customMinimumBalance;
-//        BigDecimal accIntRate = customInterestRate == null ? interestRate : customInterestRate;
-//        BigDecimal accODLimit = customOverDraftLimit == null ? overdraftLimit : customOverDraftLimit;
-//
-//        return new BalanceResponse(accountNumber, status, productName, balance, availableBalance, accIntRate, accMinBal, accODLimit);
+
+    /**
+     * Update account balance.
+     *
+     * @param accountNumber owner account number
+     * @param updateAccountRequest update info
+     */
+    @Override
+    public void updateAccountBalance(String accountNumber, UpdateAccountRequest updateAccountRequest) {
+        BigDecimal amount = updateAccountRequest.getAmount();
+        Account fromAccount = getAccount(accountNumber);
+        boolean accountOperation = updateAccountRequest.getOperation().equals(Constants.CREDIT);
+
+        updateAccountBalance(amount, accountOperation, fromAccount);
+        if (!accountNumber.equals(updateAccountRequest.getToAccountNumber())){
+            Account toAccount = getAccount(updateAccountRequest.getToAccountNumber());
+            updateAccountBalance(amount, !accountOperation, toAccount);
+        }
+    }
+
+
+    /**
+     * check if account exists or not
+     *
+     * @param accountNumber account number
+     */
+    @Override
+    public boolean isAccountValid(String accountNumber) {
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
+        Root<Account> root = criteriaQuery.from(Account.class);
+
+        criteriaQuery.select(criteriaBuilder.tuple(root.get("accountNumber"), root.get("accountStatus")));
+        Predicate predicate = criteriaBuilder.equal(root.get("accountNumber"), accountNumber);
+        criteriaQuery.where(criteriaBuilder.and(predicate));
+        Tuple result = entityManager.createQuery(criteriaQuery).getSingleResult();
+        if (result == null){
+            return false;
+        }
+        AccountStatus status = result.get(1, AccountStatus.class);
+        return status.equals(AccountStatus.ACTIVE);
+    }
+
+
+    /**
+     * Update account balance.
+     *
+     * @param amount    amount to be updated
+     * @param operation true -> CREDIT, false -> DEBIT
+     * @param account Account to be updated
+     */
+    private void updateAccountBalance(BigDecimal amount, boolean operation, Account account) {
+        if (operation){
+            account.setBalance(account.getBalance().add(amount));
+            account.setAvailableBalance(account.getAvailableBalance().add(amount));
+        } else {
+            account.setBalance(account.getBalance().subtract(amount));
+            account.setAvailableBalance(account.getAvailableBalance().subtract(amount));
+        }
+        accountRepository.save(account);
     }
 
 
@@ -261,5 +302,21 @@ public class AccountServiceImpl implements AccountService {
         if (!predicates.isEmpty()) {
             query.where(cb.and(predicates.toArray(new Predicate[0])));
         }
+    }
+
+
+    /**
+     * Get customer account
+     *
+     * @param accountNumber account no
+     * @return Account
+     */
+    private Account getAccount(String accountNumber) {
+        return accountRepository.findByAccountNumber(accountNumber).orElseThrow(
+                () -> {
+                    log.error("Account not found with given account number: {}", accountNumber);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found with given account number: " + accountNumber);
+                }
+        );
     }
 }

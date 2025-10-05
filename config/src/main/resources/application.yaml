@@ -8,7 +8,8 @@ spring:
     config:
       server:
         git:
-          uri: "https://github.com/Roshan1206/financecore-config.git"
+          uri: file:///D:/Practice/financecore/financecore-config
+#          uri: "https://github.com/Roshan1206/financecore-config.git"
           default-label: main
           timeout: 5
           clone-on-start: true

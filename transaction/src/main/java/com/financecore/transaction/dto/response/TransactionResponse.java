@@ -21,8 +21,8 @@ public class TransactionResponse {
 
     private long id;
     private String reference;
-    private long fromAccountId;
-    private long toAccountId;
+    private long fromAccountNumber;
+    private long toAccountNumber;
     private TransactionType type;
     private BigDecimal amount;
     private String currencyCode;
