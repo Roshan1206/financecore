@@ -78,6 +78,18 @@ public class AccountController {
 
 
     /**
+     * Get all accounts for any customer
+     */
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<PageResponse<AccountsResponse>> getCustomerAccounts(@PathVariable String customerId) {
+        Sort sort = Sort.by("customerId").ascending();
+        Pageable pageable = PageRequest.of(1, 10, sort);
+        PageResponse<AccountsResponse> response = accountService.getCustomerAccounts(customerId, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+
+    /**
      * Update account Status
      */
     @PutMapping("/{accountNumber}/status")

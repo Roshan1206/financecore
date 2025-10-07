@@ -188,33 +188,35 @@ Customer_User_Mapping:
 
 ### Customer Service Endpoints
 ```
-GET /api/v1/customers
+GET /api/v1/customers - Completed
 - Description: Retrieve paginated list of customers with filtering
 - Query Params: page, size, status, customerType, riskProfile
 
-GET /api/v1/customers/{customerId}
+GET /api/v1/customers/{customerId} - Completed
 - Description: Get detailed customer information including addresses and documents
 
-POST /api/v1/customers
+POST /api/v1/customers - Completed
 - Description: Create new customer profile with KYC initiation
 
-PUT /api/v1/customers/{customerId}
+PUT /api/v1/customers/{customerId} - Completed
 - Description: Update customer information and trigger re-verification if needed
 
-GET /api/v1/customers/{customerId}/accounts
+GET /api/v1/customers/{customerId}/accounts - Completed
 - Description: Get all accounts associated with a customer (calls Account Service)
 
-GET /api/v1/customers/search
+GET /api/v1/customers/search - Completed
 - Description: Advanced customer search with complex criteria
 - Query Params: email, phone, accountNumber
+- Can be executed with search
 
-POST /api/v1/customers/{customerId}/documents
+POST /api/v1/customers/{customerId}/documents - Completed
 - Description: Upload customer documents for verification
 
-GET /api/v1/customers/kyc/pending
+GET /api/v1/customers/kyc/pending - Completed
 - Description: Get customers pending KYC verification
+- Can be executed with search
 
-PUT /api/v1/customers/{customerId}/kyc-status
+PUT /api/v1/customers/{customerId}/kyc-status - Completed
 - Description: Update KYC verification status
 
 POST /api/v1/customers/{customerId}/validate
@@ -248,7 +250,6 @@ POST /api/v1/accounts/{accountNumber}/freeze - completed
 
 GET /api/v1/accounts/customer/{customerId} - completed
 - Description: Get all accounts for a specific customer
-- can be executed via /api/v1/accounts using Query Param
 
 GET /api/v1/accounts/dormant
 - Description: Get accounts that are dormant based on inactivity

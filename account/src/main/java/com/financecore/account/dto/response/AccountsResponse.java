@@ -15,15 +15,27 @@ import java.time.LocalDateTime;
  * @author Roshan
  */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class AccountsResponse {
     private String accountNumber;
     private long customerId;
     private String productName;
-    private ProductType productType;
-    private AccountStatus accountStatus;
+    private String productType;
+    private String accountStatus;
     private LocalDateTime openedAt;
     private BigDecimal balance;
     private BigDecimal availableBalance;
+
+    public AccountsResponse() {}
+
+    public AccountsResponse(String accountNumber, long customerId, String productName, ProductType productType, AccountStatus accountStatus,
+                            LocalDateTime openedAt, BigDecimal balance, BigDecimal availableBalance) {
+        this.accountNumber = accountNumber;
+        this.customerId = customerId;
+        this.productName = productName;
+        this.productType = productType.toString();
+        this.accountStatus = accountStatus.toString();
+        this.openedAt = openedAt;
+        this.balance = balance;
+        this.availableBalance = availableBalance;
+    }
 }

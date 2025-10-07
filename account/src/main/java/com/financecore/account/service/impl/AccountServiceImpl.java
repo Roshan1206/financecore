@@ -214,6 +214,19 @@ public class AccountServiceImpl implements AccountService {
 
 
     /**
+     * Filter and fetch accounts based on requirements.
+     *
+     * @param customerId customer id
+     * @param pageable   page no, size and sorting details
+     * @return get paginated accounts
+     */
+    @Override
+    public PageResponse<AccountsResponse> getCustomerAccounts(String customerId, Pageable pageable) {
+        return getAccounts(null, null, null, null, null, null, customerId, pageable);
+    }
+
+
+    /**
      * Update account balance.
      *
      * @param amount    amount to be updated

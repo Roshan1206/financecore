@@ -22,15 +22,17 @@ public class EnumUtilImpl implements EnumUtil {
      * get {@code AddressType} Enum value for address
      *
      * @param addressType address type
-     * @return AddressType if valid
+     * @return AddressType
      */
     @Override
-    public Optional<AddressType> getSafeAddressType(String addressType) {
-        try {
-            return Optional.of(AddressType.valueOf(addressType.toUpperCase()));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use  HOME, WORK, or MAILING in addressType");
-        }
+    public AddressType getSafeAddressType(String addressType) {
+        String address = addressType.toUpperCase();
+        return switch (address) {
+            case "HOME" -> AddressType.HOME;
+            case "WORK" -> AddressType.WORK;
+            case "MAILING" -> AddressType.MAILING;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use  HOME, WORK, or MAILING in addressType");
+        };
     }
 
 
@@ -41,12 +43,12 @@ public class EnumUtilImpl implements EnumUtil {
      * @return CustomerType if valid
      */
     @Override
-    public Optional<CustomerType> getSafeCustomerType(String customerType) {
-        try {
-            return Optional.of(CustomerType.valueOf(customerType.toUpperCase()));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use INDIVIDUAL OR BUSINESS in customerType");
-        }
+    public CustomerType getSafeCustomerType(String customerType) {
+        return switch (customerType.toUpperCase()) {
+            case "INDIVIDUAL" -> CustomerType.INDIVIDUAL;
+            case "BUSINESS" -> CustomerType.BUSINESS;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use INDIVIDUAL OR BUSINESS in customerType");
+        };
     }
 
 
@@ -57,11 +59,13 @@ public class EnumUtilImpl implements EnumUtil {
      * @return DocumentType if valid
      */
     @Override
-    public Optional<DocumentType> getSafeDocumentType(String documentType) {
-        try {
-            return Optional.of(DocumentType.valueOf(documentType.toUpperCase()));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use PASSPORT, DRIVING_LICENSE, UTILITY_BILL, AADHAR_CARD in documentType");
-        }
+    public DocumentType getSafeDocumentType(String documentType) {
+        return switch (documentType.toUpperCase()) {
+            case "PASSPORT" -> DocumentType.PASSPORT;
+            case "DRIVING_LICENSE" -> DocumentType.DRIVING_LICENSE;
+            case "UTILITY_BILL" -> DocumentType.UTILITY_BILL;
+            case "AADHAR_CARD" -> DocumentType.AADHAR_CARD;
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please use PASSPORT, DRIVING_LICENSE, UTILITY_BILL, AADHAR_CARD in documentType");
+        };
     }
 }

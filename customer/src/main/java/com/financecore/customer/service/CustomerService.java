@@ -4,10 +4,10 @@ import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
+import com.financecore.customer.dto.response.CustomersAccountsResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
-import com.financecore.customer.entity.enums.DocumentType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
 import org.springframework.data.domain.Pageable;
@@ -28,11 +28,10 @@ public interface CustomerService {
      * @param riskProfile Risk profiles
      * @param email Customer email
      * @param phoneNumber Customer phone number
-     * @param accountNumber Customer account number
      * @param pageable Paging
      */
     PageResponse<CustomersResponse> getCustomers(Status status, CustomerType customerType, RiskProfile riskProfile,
-                                                 String email, String phoneNumber, String accountNumber, Pageable pageable);
+                                                 String email, String phoneNumber, Pageable pageable);
 
 
     /**
@@ -74,7 +73,7 @@ public interface CustomerService {
      *
      * @return {@code CustomerDocumentResponse}
      */
-    CustomerDocumentResponse uploadDocuments(String customerNumber, MultipartFile file, DocumentType documentType, String documentNumber);
+    CustomerDocumentResponse uploadDocuments(String customerNumber, MultipartFile file, String documentType, String documentNumber);
 
 
     /**
@@ -85,4 +84,12 @@ public interface CustomerService {
      * @return Message
      */
     String updateCustomerKyc(String customerNumber);
+
+
+    /**
+     * Retrieve paginated list of customers with filtering
+     *
+     * @param customerId Customer id
+     */
+    CustomersAccountsResponse getCustomerAccounts(String customerId);
 }

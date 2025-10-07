@@ -4,10 +4,10 @@ import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
+import com.financecore.customer.dto.response.CustomersAccountsResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
-import com.financecore.customer.entity.enums.DocumentType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
 import com.financecore.customer.service.CustomerService;
@@ -59,14 +59,13 @@ public class CustomerController {
                                                                         @RequestParam(required = false) RiskProfile riskProfile,
                                                                         @RequestParam(required = false) String email,
                                                                         @RequestParam(required = false) String phoneNumber,
-                                                                        @RequestParam(required = false) String accountNumber,
                                                                         @RequestParam(defaultValue = "0") @Min(0) int pageNumber,
                                                                         @RequestParam(defaultValue = "20") @Min(1) int pageSize,
                                                                         @RequestParam(defaultValue = "id") String sortBy,
                                                                         @RequestParam(defaultValue = "true") boolean asc){
         Sort sort = asc ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-        PageResponse<CustomersResponse> response = customerService.getCustomers(kycStatus, customerType, riskProfile, email, phoneNumber, accountNumber, pageable);
+        PageResponse<CustomersResponse> response = customerService.getCustomers(kycStatus, customerType, riskProfile, email, phoneNumber, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -99,9 +98,17 @@ public class CustomerController {
         String message = customerService.updateCustomer(customerNumber, customerUpdateRequest);
         return ResponseEntity.ok(message);
     }
-//
-//    GET /api/v1/customers/{customerId}/accounts
-//- Description: Get all accounts associated with a customer (calls Account Service)
+
+
+    /**
+     * Get all accounts associated with a customer (calls Account Service)
+     */
+    @GetMapping("/{customerId}/accounts")
+    public ResponseEntity<CustomersAccountsResponse> getCustomerAccounts(@PathVariable String customerId) {
+        CustomersAccountsResponse response = customerService.getCustomerAccounts(customerId);
+        return ResponseEntity.ok(response);
+    }
+
 
     /**
      * Upload customer documents for verification
@@ -109,7 +116,7 @@ public class CustomerController {
     @PostMapping("/{customerNumber}/documents")
     public ResponseEntity<CustomerDocumentResponse> uploadDocuments(@PathVariable String customerNumber,
                                                                     @RequestParam("file") MultipartFile file,
-                                                                    @RequestParam DocumentType documentType,
+                                                                    @RequestParam String documentType,
                                                                     @RequestParam String documentNumber){
         CustomerDocumentResponse response = customerService.uploadDocuments(customerNumber, file, documentType, documentNumber);
         return ResponseEntity.ok(response);

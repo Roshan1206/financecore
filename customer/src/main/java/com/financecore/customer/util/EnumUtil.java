@@ -17,25 +17,25 @@ public interface EnumUtil {
      * get {@code AddressType} Enum value for address
      *
      * @param addressType address type
-     * @return AddressType if valid
+     * @return AddressType
      */
-    Optional<AddressType> getSafeAddressType(String addressType);
+    AddressType getSafeAddressType(String addressType);
 
 
     /**
      * get {@code CustomerType} Enum value for address
      *
      * @param customerType customer type
-     * @return CustomerType if valid
+     * @return CustomerType
      */
-    Optional<CustomerType> getSafeCustomerType(String customerType);
+    CustomerType getSafeCustomerType(String customerType);
 
 
     /**
      * get {@code DocumentType} Enum value for address
      *
      * @param documentType document type
-     * @return DocumentType if valid
+     * @return DocumentType
      */
-    Optional<DocumentType> getSafeDocumentType(String documentType);
+    DocumentType getSafeDocumentType(String documentType);
 }

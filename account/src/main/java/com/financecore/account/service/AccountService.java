@@ -27,6 +27,7 @@ public interface AccountService {
      * @param maxAmount account balance
      * @param fromDate from when
      * @param toDate till when
+     * @param customerId customer id
      * @param pageable page no, size and sorting details
      *
      * @return get paginated accounts
@@ -70,4 +71,15 @@ public interface AccountService {
      * @param accountNumber account number
      */
     boolean isAccountValid(String accountNumber);
+
+
+    /**
+     * Filter and fetch accounts based on requirements.
+     *
+     * @param customerId customer id
+     * @param pageable page no, size and sorting details
+     *
+     * @return get paginated accounts
+     */
+    PageResponse<AccountsResponse> getCustomerAccounts(String customerId, Pageable pageable);
 }
