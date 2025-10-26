@@ -217,6 +217,115 @@ alter table fc_transaction.transaction alter column from_account_id drop default
 alter table fc_transaction.transaction alter column to_account_id drop default;
 alter table fc_transaction.transaction_limits alter column account_id drop default;
 
+-- V1__Create_all_tables.sql
+
+-- User tables with BIGSERIAL (creates sequences automatically)
+CREATE TABLE fc_auth.users (
+	user_id BIGSERIAL NOT NULL,  -- Changed from int8 to BIGSERIAL
+	email varchar(255) NOT NULL,
+	first_name varchar(255) NOT NULL,
+	last_name varchar(255) NOT NULL,
+	password varchar(255) NOT NULL,
+	enabled boolean DEFAULT true,
+	account_non_expired boolean DEFAULT true,
+	account_non_locked boolean DEFAULT true,
+	credentials_non_expired boolean DEFAULT true,
+	created_at timestamp,
+	last_modified_at timestamp,
+	CONSTRAINT users_email_key UNIQUE (email),
+	CONSTRAINT users_pkey PRIMARY KEY (user_id)
+);
+
+CREATE TABLE fc_auth.role (
+	id BIGSERIAL NOT NULL,  -- Changed from int8 to BIGSERIAL
+	role varchar(255) NOT NULL,
+	CONSTRAINT role_pkey PRIMARY KEY (id),
+	CONSTRAINT role_role_key UNIQUE (role)
+);
+
+CREATE TABLE fc_auth.user_roles (
+	role_id int8 NOT NULL,
+	user_id int8 NOT NULL,
+	CONSTRAINT user_roles_pkey PRIMARY KEY (role_id, user_id),
+	CONSTRAINT fk_user_is FOREIGN KEY (user_id) REFERENCES fc_auth.users(user_id),
+	CONSTRAINT fk_role_id FOREIGN KEY (role_id) REFERENCES fc_auth.role(id)
+);
+
+-- OAuth2 tables
+CREATE TABLE fc_auth.oauth2_registered_client (
+    id varchar(100) NOT NULL,
+    client_id varchar(100) NOT NULL,
+    client_id_issued_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    client_secret varchar(200) DEFAULT NULL,
+    client_secret_expires_at timestamp DEFAULT NULL,
+    client_name varchar(200) NOT NULL,
+    client_authentication_methods varchar(1000) NOT NULL,
+    authorization_grant_types varchar(1000) NOT NULL,
+    redirect_uris varchar(1000) DEFAULT NULL,
+    post_logout_redirect_uris varchar(1000) DEFAULT NULL,
+    scopes varchar(1000) NOT NULL,
+    client_settings varchar(2000) NOT NULL,
+    token_settings varchar(2000) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE fc_auth.oauth2_authorization_consent (
+    registered_client_id varchar(100) NOT NULL,
+    principal_name varchar(200) NOT NULL,
+    authorities varchar(1000) NOT NULL,
+    PRIMARY KEY (registered_client_id, principal_name)
+);
+
+CREATE TABLE fc_auth.oauth2_authorization (
+    id varchar(100) NOT NULL,
+    registered_client_id varchar(100) NOT NULL,
+    principal_name varchar(200) NOT NULL,
+    authorization_grant_type varchar(100) NOT NULL,
+    authorized_scopes varchar(1000) DEFAULT NULL,
+    attributes TEXT DEFAULT NULL,
+    state varchar(500) DEFAULT NULL,
+    authorization_code_value TEXT DEFAULT NULL,
+    authorization_code_issued_at timestamp DEFAULT NULL,
+    authorization_code_expires_at timestamp DEFAULT NULL,
+    authorization_code_metadata TEXT DEFAULT NULL,
+    access_token_value TEXT DEFAULT NULL,
+    access_token_issued_at timestamp DEFAULT NULL,
+    access_token_expires_at timestamp DEFAULT NULL,
+    access_token_metadata TEXT DEFAULT NULL,
+    access_token_type varchar(100) DEFAULT NULL,
+    access_token_scopes varchar(1000) DEFAULT NULL,
+    oidc_id_token_value TEXT DEFAULT NULL,
+    oidc_id_token_issued_at timestamp DEFAULT NULL,
+    oidc_id_token_expires_at timestamp DEFAULT NULL,
+    oidc_id_token_metadata TEXT DEFAULT NULL,
+    refresh_token_value TEXT DEFAULT NULL,
+    refresh_token_issued_at timestamp DEFAULT NULL,
+    refresh_token_expires_at timestamp DEFAULT NULL,
+    refresh_token_metadata TEXT DEFAULT NULL,
+    user_code_value TEXT DEFAULT NULL,
+    user_code_issued_at timestamp DEFAULT NULL,
+    user_code_expires_at timestamp DEFAULT NULL,
+    user_code_metadata TEXT DEFAULT NULL,
+    device_code_value TEXT DEFAULT NULL,
+    device_code_issued_at timestamp DEFAULT NULL,
+    device_code_expires_at timestamp DEFAULT NULL,
+    device_code_metadata TEXT DEFAULT NULL,
+    PRIMARY KEY (id)
+);
+
+-- Insert test data
+INSERT INTO fc_auth.role (role) VALUES ('USER'), ('ADMIN');
+
+INSERT INTO fc_auth.users (email, first_name, last_name, password) VALUES 
+('happy@test.com', 'Happy', 'User', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.'), -- password: password
+('admin@test.com', 'Admin', 'User', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.');  -- password: password
+
+-- Link users to roles (assuming user_id 1 = USER role, user_id 2 = ADMIN role)
+INSERT INTO fc_auth.user_roles (user_id, role_id) VALUES 
+(1, 1), -- happy@test.com gets USER role
+(2, 1), -- admin@test.com gets USER role  
+(2, 2); -- admin@test.com gets ADMIN role too
+
 
 
 

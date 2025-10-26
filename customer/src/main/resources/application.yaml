@@ -9,6 +9,11 @@ customer:
       schema: fc_customer
     file:
       upload-dir: uploads
+    auth:
+      url: http://localhost:8090
+      client:
+        id: customer-service
+        secret: customer-secret
 
 spring:
   application:
@@ -25,13 +30,29 @@ spring:
       ddl-auto: validate
   config:
     import: "optional:configserver:http://localhost:8888"
+  security:
+    oauth2:
+      client:
+        registration:
+          account-service:
+            client_id: ${customer.config.auth.client.id}
+            client_secret: ${customer.config.auth.client.secret}
+            authorization-grant-type: client_credentials
+            scopes: service.read,service.write,internal.api
+            provider: auth-server
+        provider:
+          auth-server:
+            token-uri: ${customer.config.auth.url}
+    user:
+      name: financecore
+      password: password
 
 eureka:
   instance:
     prefer-ip-address: true
   client:
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: false
+    fetch-registry: false
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
 

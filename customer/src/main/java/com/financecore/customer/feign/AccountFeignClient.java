@@ -1,5 +1,6 @@
-package com.financecore.customer.service;
+package com.financecore.customer.feign;
 
+import com.financecore.customer.config.feign.AccountServiceFeignConfig;
 import com.financecore.customer.dto.response.AccountsResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -7,7 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "accounts", path = "/api/v1/accounts")
+/**
+ * Feign client interface for accounts
+ *
+ * @author Roshan
+ */
+@FeignClient(name = "account", path = "/api/v1/accounts", configuration = AccountServiceFeignConfig.class)
 public interface AccountFeignClient {
 
     /**

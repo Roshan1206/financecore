@@ -7,6 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO class for registering user
+ *
+ * @author Roshan
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,7 +28,7 @@ public class UserRegistrationRequest {
     private String email;
 
     @NotBlank(message = "Password can not be empty")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])",
-            message = "Password should be minimum 8 character and include atleast 1 Capital letter, 1 Small letter, 1 digit & 1 special character")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$",
+            message = "Password should be minimum 8 character and include at least 1 Capital letter, 1 Small letter, 1 digit & 1 special character")
     private String password;
 }

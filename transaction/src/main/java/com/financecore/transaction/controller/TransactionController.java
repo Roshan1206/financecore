@@ -79,6 +79,21 @@ public class TransactionController {
 
 
     /**
+     * Generate and retrieve account statements
+     */
+    @GetMapping("{accountNumber}/statements")
+    public ResponseEntity<PageResponse<TransactionResponse>> getAccountTransactions(@PathVariable String accountNumber,
+                                                                                    @RequestParam(required = false) LocalDate fromDate,
+                                                                                    @RequestParam(required = false) LocalDate toDate) {
+        Sort sort = Sort.by("id").ascending();
+        Pageable pageable = PageRequest.of(1, 10, sort);
+        PageResponse<TransactionResponse> responses = transactionService.getTransactions(accountNumber, fromDate, toDate, null, null, null, null, pageable);
+        return ResponseEntity.ok(responses);
+    }
+
+
+
+    /**
      * Create withdrawal transaction.
      *
      * @param accountNumber user account number

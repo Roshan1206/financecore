@@ -1,20 +1,23 @@
 server:
   port: 8090
-  servlet:
-    context-path: /api
+#  servlet:
+#    context-path: /api
 
 auth:
   config:
     database:
       schema: fc_auth
-    issuer:
+    auth:
       url: http://localhost:${server.port}
+      client:
+        id: user-server
+        secret: user-secret
 
 spring:
   application:
     name: auth
   datasource:
-    url: jdbc:postgres:http://localhost:5432/finance_core?currentSchema=${auth.config.database.schema}
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${auth.config.database.schema}
     username: postgres
     password: password
   jpa:
@@ -25,12 +28,22 @@ spring:
       ddl-auto: validate
   config:
     import: "optional:configserver:http://localhost:8888"
+  security:
+    user:
+      name: fincancecore
+      password: password
 
 eureka:
   instance:
     prefer-ip-address: true
   client:
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: false
+    fetch-registry: false
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

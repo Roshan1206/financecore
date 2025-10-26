@@ -18,7 +18,7 @@ import com.financecore.transaction.mapper.TransactionMapper;
 import com.financecore.transaction.repoitory.TransactionCategoryRepository;
 import com.financecore.transaction.repoitory.TransactionRepository;
 import com.financecore.transaction.service.TransactionService;
-import com.financecore.transaction.service.client.AccountFeignClient;
+import com.financecore.transaction.feign.AccountFeignClient;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -51,6 +51,9 @@ import java.util.Optional;
 @Service
 public class TransactionServiceImpl implements TransactionService {
 
+    /**
+     * Feign client for account service
+     */
     private final AccountFeignClient accountFeignClient;
 
     /**

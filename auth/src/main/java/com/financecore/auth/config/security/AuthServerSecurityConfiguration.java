@@ -1,5 +1,7 @@
-package com.financecore.auth.config;
+package com.financecore.auth.config.security;
 
+import com.financecore.auth.entity.User;
+import com.financecore.auth.repository.UserRepository;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -14,6 +16,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -37,21 +41,26 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
 
+/**
+ * Configuration class for managing security across security across microservice.
+ *
+ * @author  Roshan
+ */
 @Configuration
 public class AuthServerSecurityConfiguration {
 
     /**
      * Injecting issuer url value through properties file
      */
-    @Value("${auth.config.issuer.url}")
+    @Value("${auth.config.auth.url}")
     private String issuerUrl;
 
 
     /**
-     * Building OAuth2 Open ID Connect authorization configuration wth default properties
+     * Building OAuth2 Open ID Connect authorization configuration wth default properties for token validations
      */
     @Bean
-    @Order(2)
+    @Order(1)
     public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
@@ -70,6 +79,37 @@ public class AuthServerSecurityConfiguration {
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
+        return httpSecurity.build();
+    }
+
+
+    /**
+     * Defining UserDetailsService for managing user for login.
+     * Converting custom user to spring user object as recommended.
+     */
+    @Bean
+    public UserDetailsService userDetailsService(UserRepository userRepository) {
+        return email -> {
+            User user = userRepository.findByEmail(email).orElseThrow(
+                    () -> new UsernameNotFoundException("User not found")
+            );
+
+            return org.springframework.security.core.userdetails.User.builder()
+                    .username(user.getUsername())
+                    .password(user.getPassword())
+                    .authorities(user.getAuthorities())
+                    .build();
+        };
+    }
+
+
+    @Bean
+    @Order(10)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .securityMatcher("/**")
+                .authorizeHttpRequests(req -> req.anyRequest().authenticated())
+                .formLogin(Customizer.withDefaults());
         return httpSecurity.build();
     }
 

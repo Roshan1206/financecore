@@ -1,5 +1,6 @@
-package com.financecore.transaction.service.client;
+package com.financecore.transaction.feign;
 
+import com.financecore.transaction.config.feign.AccountServiceFeignConfig;
 import com.financecore.transaction.dto.request.UpdateAccountRequest;
 import com.financecore.transaction.dto.response.BalanceResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -11,8 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * Feign client interface for accounts
+ *
+ * @author Roshan
  */
-@FeignClient(name = "account", path = "/api/v1/accounts")
+@FeignClient(name = "account", path = "/api/v1/accounts", configuration = AccountServiceFeignConfig.class)
 public interface AccountFeignClient {
 
     /**

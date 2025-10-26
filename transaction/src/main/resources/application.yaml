@@ -7,6 +7,11 @@ transaction:
   config:
     database:
       schema: fc_transaction
+    auth:
+      url: http://localhost:8090
+      client:
+        id: transaction-service
+        secret: transaction-secret
 
 spring:
   application:
@@ -23,12 +28,28 @@ spring:
       ddl-auto: validate
   config:
     import: "optional:configserver:http://localhost:8888"
+  security:
+    oauth2:
+      client:
+        registration:
+          account-service:
+            client_id: ${transaction.config.auth.client.id}
+            client_secret: ${transaction.config.auth.client.secret}
+            authorization-grant-type: client_credentials
+            scopes: service.read,service.write,internal.api
+            provider: auth-server
+        provider:
+          auth-server:
+            token-uri: ${transaction.config.auth.url}/oauth2/token
+    user:
+      name: financecore
+      password: password
 
 eureka:
   instance:
     prefer-ip-address: true
   client:
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: false
+    fetch-registry: false
     serviceUrl:
       defaultZone: http://localhost:8761/eureka

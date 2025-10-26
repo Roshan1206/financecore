@@ -1,11 +1,23 @@
 server:
   port: 8080
 
+gateway:
+  config:
+    auth:
+      url: http://localhost:8090
+      client:
+        id: gateway-server
+        secret: gateway-secret
+
 spring:
   application:
     name: gateway
   config:
     import: "optional:configserver:http://localhost:8888"
+  security:
+    user:
+      name: fincancecore
+      password: password
 
 eureka:
   instance:
