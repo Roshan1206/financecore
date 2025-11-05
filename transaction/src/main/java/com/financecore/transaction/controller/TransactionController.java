@@ -32,7 +32,7 @@ import java.time.LocalDate;
  * @author Roshan
  */
 @RestController
-@RequestMapping("/v1/transactions")
+@RequestMapping("/v1")
 public class TransactionController {
 
     /**

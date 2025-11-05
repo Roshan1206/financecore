@@ -33,7 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @author Roshan
  */
 @RestController
-@RequestMapping("/v1/customers")
+@RequestMapping("/v1")
 public class CustomerController {
 
     /**

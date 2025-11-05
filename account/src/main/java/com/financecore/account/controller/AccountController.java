@@ -34,7 +34,7 @@ import java.time.LocalDate;
  * @author Roshan
  */
 @RestController
-@RequestMapping("/v1/accounts")
+@RequestMapping("/v1")
 @Slf4j
 public class AccountController {
 
@@ -50,6 +50,7 @@ public class AccountController {
     public AccountController(AccountService accountService){
         this.accountService = accountService;
     }
+
 
     /**
      * Get paginated accounts with filtering by status, type, balance range, created date

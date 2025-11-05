@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Roshan
  */
 @RestController
-@RequestMapping("/v1/auth")
+@RequestMapping("/v1")
 public class AuthenticationController {
 
     /**

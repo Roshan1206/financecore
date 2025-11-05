@@ -1,16 +1,13 @@
-package com.financecore.gateway.config;
+package com.financecore.gateway.config.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.client.support.BasicAuthenticationInterceptor;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector;
+import org.springframework.security.oauth2.server.resource.introspection.SpringReactiveOpaqueTokenIntrospector;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 /**
  * Opaque token security configuration.
@@ -43,10 +40,10 @@ public class OpaqueTokenSecurityConfig {
      * Filter chain for validating opaque token
      */
     @Bean
-    public SecurityFilterChain opaqueTokenFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityWebFilterChain opaqueTokenFilterChain(ServerHttpSecurity httpSecurity) {
         httpSecurity
-                .authorizeHttpRequests(req -> req.anyRequest().authenticated())
-                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeExchange(exchange -> exchange.anyExchange().authenticated())
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .opaqueToken(opaque -> opaque.introspector(tokenIntrospector())));
         return httpSecurity.build();
@@ -57,10 +54,12 @@ public class OpaqueTokenSecurityConfig {
      * TokenIntrospector for validating token.
      */
     @Bean
-    public OpaqueTokenIntrospector tokenIntrospector() {
+    public ReactiveOpaqueTokenIntrospector tokenIntrospector() {
         String introspectionUrl = authUrl + "/oauth2/introspect";
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.getInterceptors().add(new BasicAuthenticationInterceptor(clientId, clientSecret));
-        return new SpringOpaqueTokenIntrospector(introspectionUrl, restTemplate);
+        return SpringReactiveOpaqueTokenIntrospector
+                .withIntrospectionUri(introspectionUrl)
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .build();
     }
 }
