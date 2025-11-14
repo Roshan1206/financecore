@@ -29,12 +29,18 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -63,25 +69,40 @@ public class TransactionServiceImpl implements TransactionService {
     private final EntityManager entityManager;
 
     /**
+     * Getting active profiles
+     */
+    private final Environment environment;
+
+    /**
      * Repository responsible for managing transactions
      */
     private final TransactionRepository transactionRepository;
 
-
+    /**
+     * Repository responsible for managing Transaction categories
+     */
     private final TransactionCategoryRepository transactionCategoryRepository;
+
+    /**
+     * Makes HTTP request to different service
+     */
+    private final WebClient webClient;
 
 
     /**
      * Injecting required dependency via constructor injection
      */
     public TransactionServiceImpl(AccountFeignClient accountFeignClient,
-                                  EntityManager entityManager,
+                                  EntityManager entityManager, Environment environment,
                                   TransactionRepository transactionRepository,
-                                  TransactionCategoryRepository transactionCategoryRepository) {
+                                  TransactionCategoryRepository transactionCategoryRepository,
+                                  WebClient webClient) {
         this.accountFeignClient = accountFeignClient;
         this.entityManager = entityManager;
+        this.environment = environment;
         this.transactionRepository = transactionRepository;
         this.transactionCategoryRepository = transactionCategoryRepository;
+        this.webClient = webClient;
     }
 
 
@@ -124,8 +145,7 @@ public class TransactionServiceImpl implements TransactionService {
             query.orderBy(orders);
         }
 
-        long totalCount =
-                getTotalCount(accountId, fromDate, toDate, amount, type, status, channel, cb);
+        long totalCount = getTotalCount(accountId, fromDate, toDate, amount, type, status, channel, cb);
 
         TypedQuery<Transaction> typedQuery = entityManager.createQuery(query)
                 .setMaxResults(pageable.getPageSize())
@@ -160,8 +180,9 @@ public class TransactionServiceImpl implements TransactionService {
      * @param selfTransferRequest account number and amount
      */
     @Override
+    @Transactional
     public TransferResponse createWithdrawal(String accountNumber, SelfTransferRequest selfTransferRequest) {
-        log.info("Withdrawal initiated...");
+        log.debug("Withdrawal initiated...");
         validateAccountNumberAndBalance(selfTransferRequest.getAmount(), accountNumber);
         Channel channel = mapToChannel(selfTransferRequest.getChannel());
         TransactionType transactionType = TransactionType.DEBIT;
@@ -185,8 +206,9 @@ public class TransactionServiceImpl implements TransactionService {
      * @param selfTransferRequest account number and amount
      */
     @Override
+    @Transactional
     public TransferResponse createDeposit(String accountNumber, SelfTransferRequest selfTransferRequest) {
-        log.info("Deposit initiated...");
+        log.debug("Deposit initiated...");
         validateAccountNumber(accountNumber);
         Channel channel = mapToChannel(selfTransferRequest.getChannel());
         TransactionType transactionType = TransactionType.CREDIT;
@@ -210,8 +232,9 @@ public class TransactionServiceImpl implements TransactionService {
      * @param transferRequest account number, channel and amount
      */
     @Override
+    @Transactional
     public TransferResponse createTransfer(String accountNumber, TransferRequest transferRequest) {
-        log.info("Transfer initiated...");
+        log.debug("Transfer initiated...");
         BigDecimal amount = transferRequest.getAmount();
         String toAccountNumber = transferRequest.getToAccountNumber();
 
@@ -323,8 +346,23 @@ public class TransactionServiceImpl implements TransactionService {
     private void validateAccountNumberAndBalance(BigDecimal amount, String accountNumber) {
         validateAccountNumber(accountNumber);
         log.debug("Checking whether account has required balance for transaction");
-        ResponseEntity<BalanceResponse> accountBalance = accountFeignClient.getAccountBalance(accountNumber);
-        if (!accountBalance.getStatusCode().is2xxSuccessful() || null == accountBalance.getBody()){
+        ResponseEntity<BalanceResponse> accountBalance;
+        if (isFeignProfileActive()) {
+            accountBalance = accountFeignClient.getAccountBalance(accountNumber);
+        } else {
+            accountBalance = webClient
+                    .get()
+                    .uri("/" + accountNumber + "/balance")
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError,
+                            res -> Mono.error(new ResponseStatusException(res.statusCode(), "Something bad happened...")))
+                    .bodyToMono(new ParameterizedTypeReference<ResponseEntity<BalanceResponse>>() {
+                    })
+                    .retry(3)
+                    .block();
+        }
+
+        if (null == accountBalance || accountBalance.getBody() != null || !accountBalance.getStatusCode().is2xxSuccessful()){
             log.error("Cannot retrieve account balance");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something bad happened....");
         }
@@ -337,14 +375,37 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     /**
+     * Check if feign profile is active or not
+     */
+    private boolean isFeignProfileActive() {
+        return environment.matchesProfiles("feign");
+    }
+
+
+    /**
      * Validate account balance after validating account
      *
      * @param accountNumber account number
      */
     private void validateAccountNumber(String accountNumber) {
         log.debug("Validating account through accounts service");
-        boolean isTransferAccountValid = accountFeignClient.validateAccount(accountNumber);
-        if (!isTransferAccountValid){
+        Boolean isTransferAccountValid;
+        if (isFeignProfileActive()){
+            isTransferAccountValid = accountFeignClient.validateAccount(accountNumber);
+        } else {
+            isTransferAccountValid = webClient
+                    .post()
+                    .uri("/{accountNumber}/validate", accountNumber)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError,
+                            res -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, Constant.INVALID_ACCOUNT + accountNumber)))
+                    .onStatus(HttpStatusCode::is5xxServerError,
+                            res -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server error")))
+                    .bodyToMono(Boolean.class)
+                    .defaultIfEmpty(false)
+                    .block();
+        }
+        if (Boolean.FALSE.equals(isTransferAccountValid)){
             log.error(Constant.INVALID_ACCOUNT + "{}", accountNumber);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, Constant.INVALID_ACCOUNT + accountNumber);
         }
@@ -361,7 +422,17 @@ public class TransactionServiceImpl implements TransactionService {
     private void updateAccount(String accountNumber, String operation, BigDecimal amount) {
         log.debug("Sending HTTP request to update account balance for account number {}", accountNumber);
         UpdateAccountRequest updateAccountRequest = new UpdateAccountRequest(accountNumber, operation, amount);
-        accountFeignClient.updateAccountBalance(accountNumber, updateAccountRequest);
+        if (isFeignProfileActive()) {
+            accountFeignClient.updateAccountBalance(accountNumber, updateAccountRequest);
+        } else {
+            webClient
+                    .post()
+                    .uri("/{accountNumber}/transaction", accountNumber)
+                    .bodyValue(updateAccountRequest)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .retry(3);
+        }
     }
 
 

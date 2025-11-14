@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  *
  * @author Roshan
  */
-@FeignClient(name = "account", path = "/api/v1/accounts", configuration = AccountServiceFeignConfig.class)
+@FeignClient(name = "account", path = "/api/v1", configuration = AccountServiceFeignConfig.class)
 public interface AccountFeignClient {
 
     /**

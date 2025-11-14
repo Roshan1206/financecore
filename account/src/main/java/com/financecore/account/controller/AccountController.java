@@ -78,6 +78,12 @@ public class AccountController {
     }
 
 
+//    @GetMapping("/{accountId}")
+//    public ResponseEntity<> getDetailedAccountDetail(@PathVariable String accountId){
+//
+//    }
+
+
     /**
      * Get all accounts for any customer
      */

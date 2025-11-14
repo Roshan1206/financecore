@@ -10,6 +10,8 @@ account:
       client:
         id: account-service
         secret: account-secret
+    transaction:
+      url: http://localhost:8083
 
 spring:
   application:

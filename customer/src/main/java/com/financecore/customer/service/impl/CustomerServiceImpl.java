@@ -33,14 +33,21 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,6 +87,9 @@ public class CustomerServiceImpl implements CustomerService {
      */
     private final EnumUtil enumUtil;
 
+
+    private final Environment environment;
+
     /**
      * Repository responsible for managing {@code CustomerDocument}
      */
@@ -90,6 +100,8 @@ public class CustomerServiceImpl implements CustomerService {
      */
     private final CustomerRepository customerRepository;
 
+    private final WebClient webClient;
+
 
     @Value("${customer.config.file.upload-dir}")
     private String uploadDir;
@@ -97,14 +109,18 @@ public class CustomerServiceImpl implements CustomerService {
     /**
      * Injecting required dependency via constructor injection
      */
-    public CustomerServiceImpl(AccountFeignClient accountFeignClient, AddressRepository addressRepository, EntityManager entityManager,
-                               EnumUtil enumUtil, CustomerDocumentRepository customerDocumentRepository, CustomerRepository customerRepository) {
+    public CustomerServiceImpl(AccountFeignClient accountFeignClient, AddressRepository addressRepository,
+                               EntityManager entityManager, EnumUtil enumUtil, Environment environment,
+                               CustomerDocumentRepository customerDocumentRepository,
+                               CustomerRepository customerRepository, WebClient webClient) {
         this.accountFeignClient = accountFeignClient;
         this.addressRepository = addressRepository;
         this.entityManager = entityManager;
         this.enumUtil = enumUtil;
+        this.environment = environment;
         this.customerDocumentRepository = customerDocumentRepository;
         this.customerRepository = customerRepository;
+        this.webClient = webClient;
     }
 
 
@@ -288,9 +304,22 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(Long.valueOf(customerId)).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found with customer id: " + customerId)
         );
-        ResponseEntity<PageResponse<AccountsResponse>> customerAccounts = accountFeignClient.getCustomerAccounts(customerId);
+        ResponseEntity<PageResponse<AccountsResponse>> customerAccounts;
+        if (environment.matchesProfiles("feign")){
+            customerAccounts = accountFeignClient.getCustomerAccounts(customerId);
+        }else {
+            customerAccounts = webClient
+                    .get()
+                    .uri("/customer/" + customerId)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is5xxServerError,
+                            res -> Mono.error(new ResponseStatusException(res.statusCode(), "Internal Server error")))
+                    .bodyToMono(new ParameterizedTypeReference<ResponseEntity<PageResponse<AccountsResponse>>>() {})
+                    .retry(3)
+                    .block();
+        }
         if (customerAccounts == null || customerAccounts.getBody() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error fetching customer accounts");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error while fetching customer accounts");
         }
         List<AccountsResponse> accountsList = customerAccounts.getBody().getContent();
 

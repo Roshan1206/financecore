@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 public class TransactionResponse {
 
-    private long id;
+//    private long id;
     private String reference;
     private long fromAccountNumber;
     private long toAccountNumber;

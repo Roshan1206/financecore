@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  *
  * @author Roshan
  */
-@FeignClient(name = "account", path = "/api/v1/accounts", configuration = AccountServiceFeignConfig.class)
+@FeignClient(name = "account", path = "/api/v1", configuration = AccountServiceFeignConfig.class)
 public interface AccountFeignClient {
 
     /**
