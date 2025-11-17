@@ -1,5 +1,6 @@
 package com.financecore.transaction.service.impl;
 
+import com.financecore.transaction.client.CommunicationClient;
 import com.financecore.transaction.constants.Constant;
 import com.financecore.transaction.dto.request.SelfTransferRequest;
 import com.financecore.transaction.dto.request.TransferRequest;
@@ -18,7 +19,6 @@ import com.financecore.transaction.mapper.TransactionMapper;
 import com.financecore.transaction.repoitory.TransactionCategoryRepository;
 import com.financecore.transaction.repoitory.TransactionRepository;
 import com.financecore.transaction.service.TransactionService;
-import com.financecore.transaction.feign.AccountFeignClient;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
@@ -29,18 +29,13 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -57,21 +52,13 @@ import java.util.Optional;
 @Service
 public class TransactionServiceImpl implements TransactionService {
 
-    /**
-     * Feign client for account service
-     */
-    private final AccountFeignClient accountFeignClient;
+    private final CommunicationClient communicationClient;
 
     /**
      * To perform db operations
      */
     @PersistenceContext
     private final EntityManager entityManager;
-
-    /**
-     * Getting active profiles
-     */
-    private final Environment environment;
 
     /**
      * Repository responsible for managing transactions
@@ -83,26 +70,17 @@ public class TransactionServiceImpl implements TransactionService {
      */
     private final TransactionCategoryRepository transactionCategoryRepository;
 
-    /**
-     * Makes HTTP request to different service
-     */
-    private final WebClient webClient;
-
 
     /**
      * Injecting required dependency via constructor injection
      */
-    public TransactionServiceImpl(AccountFeignClient accountFeignClient,
-                                  EntityManager entityManager, Environment environment,
+    public TransactionServiceImpl(CommunicationClient communicationClient, EntityManager entityManager,
                                   TransactionRepository transactionRepository,
-                                  TransactionCategoryRepository transactionCategoryRepository,
-                                  WebClient webClient) {
-        this.accountFeignClient = accountFeignClient;
+                                  TransactionCategoryRepository transactionCategoryRepository) {
+        this.communicationClient = communicationClient;
         this.entityManager = entityManager;
-        this.environment = environment;
         this.transactionRepository = transactionRepository;
         this.transactionCategoryRepository = transactionCategoryRepository;
-        this.webClient = webClient;
     }
 
 
@@ -346,21 +324,7 @@ public class TransactionServiceImpl implements TransactionService {
     private void validateAccountNumberAndBalance(BigDecimal amount, String accountNumber) {
         validateAccountNumber(accountNumber);
         log.debug("Checking whether account has required balance for transaction");
-        ResponseEntity<BalanceResponse> accountBalance;
-        if (isFeignProfileActive()) {
-            accountBalance = accountFeignClient.getAccountBalance(accountNumber);
-        } else {
-            accountBalance = webClient
-                    .get()
-                    .uri("/" + accountNumber + "/balance")
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError,
-                            res -> Mono.error(new ResponseStatusException(res.statusCode(), "Something bad happened...")))
-                    .bodyToMono(new ParameterizedTypeReference<ResponseEntity<BalanceResponse>>() {
-                    })
-                    .retry(3)
-                    .block();
-        }
+        ResponseEntity<BalanceResponse> accountBalance = communicationClient.getAccountBalance(accountNumber);
 
         if (null == accountBalance || accountBalance.getBody() != null || !accountBalance.getStatusCode().is2xxSuccessful()){
             log.error("Cannot retrieve account balance");
@@ -375,37 +339,14 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     /**
-     * Check if feign profile is active or not
-     */
-    private boolean isFeignProfileActive() {
-        return environment.matchesProfiles("feign");
-    }
-
-
-    /**
      * Validate account balance after validating account
      *
      * @param accountNumber account number
      */
     private void validateAccountNumber(String accountNumber) {
         log.debug("Validating account through accounts service");
-        Boolean isTransferAccountValid;
-        if (isFeignProfileActive()){
-            isTransferAccountValid = accountFeignClient.validateAccount(accountNumber);
-        } else {
-            isTransferAccountValid = webClient
-                    .post()
-                    .uri("/{accountNumber}/validate", accountNumber)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError,
-                            res -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, Constant.INVALID_ACCOUNT + accountNumber)))
-                    .onStatus(HttpStatusCode::is5xxServerError,
-                            res -> Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server error")))
-                    .bodyToMono(Boolean.class)
-                    .defaultIfEmpty(false)
-                    .block();
-        }
-        if (Boolean.FALSE.equals(isTransferAccountValid)){
+        boolean isTransferAccountValid = communicationClient.validateAccount(accountNumber);
+        if (!isTransferAccountValid){
             log.error(Constant.INVALID_ACCOUNT + "{}", accountNumber);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, Constant.INVALID_ACCOUNT + accountNumber);
         }
@@ -422,17 +363,7 @@ public class TransactionServiceImpl implements TransactionService {
     private void updateAccount(String accountNumber, String operation, BigDecimal amount) {
         log.debug("Sending HTTP request to update account balance for account number {}", accountNumber);
         UpdateAccountRequest updateAccountRequest = new UpdateAccountRequest(accountNumber, operation, amount);
-        if (isFeignProfileActive()) {
-            accountFeignClient.updateAccountBalance(accountNumber, updateAccountRequest);
-        } else {
-            webClient
-                    .post()
-                    .uri("/{accountNumber}/transaction", accountNumber)
-                    .bodyValue(updateAccountRequest)
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .retry(3);
-        }
+        communicationClient.updateAccountBalance(accountNumber, updateAccountRequest);
     }
 
 

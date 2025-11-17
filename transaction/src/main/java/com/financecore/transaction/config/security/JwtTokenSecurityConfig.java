@@ -1,5 +1,6 @@
 package com.financecore.transaction.config.security;
 
+import com.financecore.transaction.constants.Constant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -28,7 +30,7 @@ import java.util.Set;
  *
  * @author Roshan
  */
-@Profile("jwt")
+@Profile(Constant.PROFILE_JWT)
 @Configuration
 public class JwtTokenSecurityConfig {
 
@@ -47,7 +49,7 @@ public class JwtTokenSecurityConfig {
     public SecurityFilterChain jwtTokenFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .authorizeHttpRequests(req -> req.anyRequest().authenticated())
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(converter())

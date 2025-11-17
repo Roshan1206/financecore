@@ -1,5 +1,6 @@
-package com.financecore.transaction.config.web;
+package com.financecore.transaction.config.communication;
 
+import com.financecore.transaction.constants.Constant;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,9 +10,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 
-@Profile("client")
+@Profile(Constant.PROFILE_WEB)
 @Configuration
-public class WebClientConfig {
+public class AccountWebClientConfig {
 
     @Value("${transaction.config.account.url}")
     private String accountUrl;

@@ -1,5 +1,6 @@
 package com.financecore.transaction.config.security;
 
+import com.financecore.transaction.constants.Constant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
  *
  * @author Roshan
  */
-@Profile("!jwt")
+@Profile(Constant.PROFILE_OAUTH)
 @Configuration
 public class OpaqueTokenSecurityConfig {
 

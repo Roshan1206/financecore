@@ -9,4 +9,8 @@ public class Constant {
     public static final String TRANSFER = "TRANSFER";
     public static final String INVALID_ACCOUNT = "Invalid account number : ";
     public static final String INSUFFICIENT_BALANCE = "Account balance is not sufficient for transaction";
+    public static final String PROFILE_FEIGN = "feign";
+    public static final String PROFILE_WEB = "web";
+    public static final String PROFILE_JWT = "jwt";
+    public static final String PROFILE_OAUTH = "oauth";
 }

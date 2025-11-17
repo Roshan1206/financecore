@@ -1,9 +1,11 @@
-package com.financecore.transaction.config.feign;
+package com.financecore.transaction.config.communication;
 
 import com.financecore.transaction.config.oauth2.OAuth2FeignRequestInterceptor;
+import com.financecore.transaction.constants.Constant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 
 /**
@@ -11,8 +13,9 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
  *
  * @author Roshan
  */
+@Profile(Constant.PROFILE_FEIGN)
 @Configuration
-public class AccountServiceFeignConfig {
+public class AccountFeignClientConfig {
 
     /**
      * Creates OAuth2 interceptor specifically for Transaction Service calls.
