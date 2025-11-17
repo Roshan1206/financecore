@@ -1,4 +1,4 @@
-create database finance_core;
+-- create database finance_core;
 
 create schema fc_auth;
 create schema fc_account;
@@ -74,7 +74,7 @@ create table customer_document (
 alter table fc_customer.address alter column customer_id type bigint;
 alter table fc_customer.customer_document alter column customer_id type bigint;
 alter table fc_customer.customer_document add column file_name varchar(100);
-alter table 
+-- alter table 
 alter table fc_customer.customer_document alter column file_name set not null;
 set search_path to fc_account;
 
@@ -178,7 +178,7 @@ create table transaction(
 );
 
 create type limit_type_enum as enum ('DAILY', 'WEEKLY', 'MONTHLY', 'TRANSCATION');
-alter type fc_transaction.limit_type_enum rename value 'TRANSACATION' to 'TRANSACTION';
+alter type fc_transaction.limit_type_enum rename value 'TRANSCATION' to 'TRANSACTION';
 create table transaction_limits(
 	limit_id BIGSERIAL primary key,
 	account_id BIGSERIAL not null,
@@ -325,17 +325,3 @@ INSERT INTO fc_auth.user_roles (user_id, role_id) VALUES
 (1, 1), -- happy@test.com gets USER role
 (2, 1), -- admin@test.com gets USER role  
 (2, 2); -- admin@test.com gets ADMIN role too
-
-
-
-
-
-
-
-
-
-
-
-
-
-
