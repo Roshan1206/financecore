@@ -19,7 +19,7 @@ import java.util.Set;
 @Data
 @Builder
 public class CustomerInfoResponse {
-    private String customerNumber;
+    private String customerID;
     private String firstName;
     private String lastName;
     private String email;

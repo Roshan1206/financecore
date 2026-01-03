@@ -10,6 +10,7 @@ import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.enums.CustomerType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
+import com.financecore.customer.service.CustomerDocumentService;
 import com.financecore.customer.service.CustomerService;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
@@ -41,12 +42,18 @@ public class CustomerController {
      */
     private final CustomerService customerService;
 
+    /**
+     * Interface responsible for managing customer's document
+     */
+    private final CustomerDocumentService documentService;
+
 
     /**
      * Injecting required dependency
      */
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, CustomerDocumentService documentService) {
         this.customerService = customerService;
+        this.documentService = documentService;
     }
 
     /**
@@ -74,7 +81,7 @@ public class CustomerController {
      * Get detailed customer information including addresses and documents
      */
     @GetMapping("/{customerNumber}")
-    public ResponseEntity<CustomerInfoResponse> getCustomerInfo(@PathVariable String customerNumber){
+    public ResponseEntity<CustomerInfoResponse> getCustomerInfo(@PathVariable long customerNumber){
         return ResponseEntity.ok(customerService.getCustomerInfo(customerNumber));
     }
 
@@ -93,7 +100,7 @@ public class CustomerController {
      * TODO: trigger re-verification if needed
      */
     @PutMapping("/{customerNumber}")
-    public ResponseEntity<String> updateCustomerInfo(@PathVariable String customerNumber,
+    public ResponseEntity<String> updateCustomerInfo(@PathVariable long customerNumber,
                                                      @RequestBody CustomerUpdateRequest customerUpdateRequest) {
         String message = customerService.updateCustomer(customerNumber, customerUpdateRequest);
         return ResponseEntity.ok(message);
@@ -114,25 +121,30 @@ public class CustomerController {
      * Upload customer documents for verification
      */
     @PostMapping("/{customerNumber}/documents")
-    public ResponseEntity<CustomerDocumentResponse> uploadDocuments(@PathVariable String customerNumber,
+    public ResponseEntity<CustomerDocumentResponse> uploadDocuments(@PathVariable long customerNumber,
                                                                     @RequestParam("file") MultipartFile file,
                                                                     @RequestParam String documentType,
                                                                     @RequestParam String documentNumber){
-        CustomerDocumentResponse response = customerService.uploadDocuments(customerNumber, file, documentType, documentNumber);
+        CustomerDocumentResponse response = documentService.uploadDocuments(customerNumber, file, documentType, documentNumber);
         return ResponseEntity.ok(response);
     }
-
 
 
     /**
      * Update KYC verification status
      */
     @PutMapping("/{customerNumber}/kyc-status")
-    public ResponseEntity<String> updateKycStatus(@PathVariable String customerNumber){
+    public ResponseEntity<String> updateKycStatus(@PathVariable long customerNumber){
         String message = customerService.updateCustomerKyc(customerNumber);
         return ResponseEntity.ok(message);
     }
-//
-//    POST /api/v1/customers/{customerId}/validate
-//- Description: Validate customer exists (for inter-service calls)
+
+
+    /**
+     * Validate customer using customer number and send customer id
+     */
+    @PostMapping("/{customerNumber}/validate")
+    public String validateCustomer(@PathVariable long customerNumber) {
+        return customerService.getAndValidateCustomer(customerNumber);
+    }
 }

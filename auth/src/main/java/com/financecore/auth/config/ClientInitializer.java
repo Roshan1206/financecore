@@ -4,6 +4,7 @@ import com.financecore.auth.dto.request.ClientRegistrationRequest;
 import com.financecore.auth.service.OAuth2ClientService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -36,14 +37,17 @@ public class ClientInitializer {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void initializeClient() {
-        ClientRegistrationRequest clientRegistrationRequest = new ClientRegistrationRequest();
-        clientRegistrationRequest.setClientId("user-service");
-        clientRegistrationRequest.setClientName("user-service");
-        clientRegistrationRequest.setClientSecret("user-secret");
-        clientRegistrationRequest.setGrantTypes(List.of("client_credentials", "authorization_code", "refresh_token"));
-        clientRegistrationRequest.setScopes(List.of("read", "write"));
-        clientRegistrationRequest.setTokenFormat("opaque");
+        RegisteredClient client = oAuth2ClientService.getRegisteredClient("user-service");
+        if (client == null) {
+            ClientRegistrationRequest clientRegistrationRequest = new ClientRegistrationRequest();
+            clientRegistrationRequest.setClientId("user-service");
+            clientRegistrationRequest.setClientName("user-service");
+            clientRegistrationRequest.setClientSecret("user-secret");
+            clientRegistrationRequest.setGrantTypes(List.of("client_credentials", "authorization_code", "refresh_token"));
+            clientRegistrationRequest.setScopes(List.of("read", "write"));
+            clientRegistrationRequest.setTokenFormat("opaque");
 
-        oAuth2ClientService.registerClient(clientRegistrationRequest);
+            oAuth2ClientService.registerClient(clientRegistrationRequest);
+        }
     }
 }

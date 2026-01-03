@@ -53,7 +53,7 @@ public class Account {
 
 //    reference from customer service
     @Column(name = "customer_id", unique = true, nullable = false, updatable = false)
-    private long customerId;
+    private String customerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)

@@ -16,6 +16,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Address entity for customers with required field
@@ -36,11 +38,12 @@ public class Address {
     private long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_number", nullable = false)
     private Customer customer;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "address_type", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "address_type", columnDefinition = "address_enum", nullable = false)
     private AddressType addressType;
 
     @Column(name = "street_address", nullable = false)

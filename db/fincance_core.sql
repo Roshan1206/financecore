@@ -325,3 +325,39 @@ INSERT INTO fc_auth.user_roles (user_id, role_id) VALUES
 (1, 1), -- happy@test.com gets USER role
 (2, 1), -- admin@test.com gets USER role  
 (2, 2); -- admin@test.com gets ADMIN role too
+
+create table fc_account.processed_transactions (
+	id BIGSERIAL primary key,
+	transaction_id varchar(50) unique,
+	account_number varchar(20),
+	amount decimal(10, 2),
+	completed boolean,
+	completed_at timestamp
+);
+
+alter table fc_account.processed_transactions add column updated_at timestamp;
+
+create type fc_account.transaction_status_enum as enum ('SUCCESS', 'PENDING', 'INSUFFICIENT_FUND', 'TECHNICAL_ERROR');
+
+alter table fc_account.processed_transactions drop column completed;
+alter table fc_account.processed_transactions add column completed fc_account.transaction_status_enum;
+
+ALTER TABLE fc_customer.customer ALTER COLUMN customer_number DROP NOT null;
+
+select conname, conrelid::regclass  from pg_constraint where pg_constraint.confrelid ='fc_customer.customer'::regclass;
+alter table fc_customer.address drop constraint fk_customer;
+alter table fc_customer.customer_document drop constraint fk_customer;
+alter table fc_customer.customer drop constraint customer_pkey;
+alter table fc_customer.customer add constraint customer_pkey primary key (customer_number);
+alter table fc_customer.address rename customer_id to customer_number;
+alter table fc_customer.customer_document rename customer_id to customer_number;
+alter table fc_customer.customer drop constraint customer_pkey;
+alter table fc_customer.customer alter column customer_number type bigint using customer_number::bigint;
+alter table fc_customer.customer alter column customer_id drop default;
+alter table fc_customer.customer alter column customer_id type varchar(16) using customer_id::text;
+alter table fc_customer.customer add constraint customer_pkey primary key (customer_number);
+alter table fc_customer.address add constraint fk_customer foreign key (customer_number) references fc_customer.customer (customer_number);
+alter table fc_customer.customer_document add constraint fk_customer foreign key (customer_number) references fc_customer.customer (customer_number);
+create sequence fc_customer.customer_number_seq start with 1000000000 increment by 1 no minvalue no maxvalue cache 1;
+alter table fc_customer.customer alter column customer_number set default nextval('fc_customer.customer_number_seq');
+alter table fc_account.account alter column customer_id type varchar(16);

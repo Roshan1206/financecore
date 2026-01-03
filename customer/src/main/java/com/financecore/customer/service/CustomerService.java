@@ -2,16 +2,15 @@ package com.financecore.customer.service;
 
 import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
-import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersAccountsResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
+import com.financecore.customer.entity.Customer;
 import com.financecore.customer.entity.enums.CustomerType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Interface responsible for managing customers.
@@ -40,7 +39,7 @@ public interface CustomerService {
      * @param customerNumber Customer number
      * @return customer information
      */
-    CustomerInfoResponse getCustomerInfo(String customerNumber);
+    CustomerInfoResponse getCustomerInfo(long customerNumber);
 
 
     /**
@@ -60,20 +59,7 @@ public interface CustomerService {
      *
      * @return Message
      */
-    String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest);
-
-
-    /**
-     * Upload customer documents
-     *
-     * @param customerNumber customer number
-     * @param file Document
-     * @param documentType document type
-     * @param documentNumber document number
-     *
-     * @return {@code CustomerDocumentResponse}
-     */
-    CustomerDocumentResponse uploadDocuments(String customerNumber, MultipartFile file, String documentType, String documentNumber);
+    String updateCustomer(long customerNumber, CustomerUpdateRequest customerUpdateRequest);
 
 
     /**
@@ -83,7 +69,7 @@ public interface CustomerService {
      *
      * @return Message
      */
-    String updateCustomerKyc(String customerNumber);
+    String updateCustomerKyc(long customerNumber);
 
 
     /**
@@ -92,4 +78,22 @@ public interface CustomerService {
      * @param customerId Customer id
      */
     CustomersAccountsResponse getCustomerAccounts(String customerId);
+
+
+    /**
+     * Get customer id after validating
+     *
+     * @param customerNumber customer number
+     * @return customer id
+     */
+    String getAndValidateCustomer(long customerNumber);
+
+
+    /**
+     * Get Customer details
+     *
+     * @param customerNumber customer number
+     * @return Customer
+     */
+    Customer getCustomer(long customerNumber);
 }

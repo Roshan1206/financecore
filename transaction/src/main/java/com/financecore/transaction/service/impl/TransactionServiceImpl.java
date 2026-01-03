@@ -1,6 +1,6 @@
 package com.financecore.transaction.service.impl;
 
-import com.financecore.transaction.client.CommunicationClient;
+import com.financecore.transaction.service.communication.CommunicationClient;
 import com.financecore.transaction.constants.Constant;
 import com.financecore.transaction.dto.request.SelfTransferRequest;
 import com.financecore.transaction.dto.request.TransferRequest;

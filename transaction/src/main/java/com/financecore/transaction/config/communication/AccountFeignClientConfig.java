@@ -1,7 +1,7 @@
 package com.financecore.transaction.config.communication;
 
-import com.financecore.transaction.config.oauth2.OAuth2FeignRequestInterceptor;
-import com.financecore.transaction.constants.Constant;
+import com.financecore.library.interceptor.OAuth2FeignRequestInterceptor;
+import com.financecore.library.constants.SpringProfiles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
  *
  * @author Roshan
  */
-@Profile(Constant.PROFILE_FEIGN)
+@Profile(SpringProfiles.FEIGN)
 @Configuration
 public class AccountFeignClientConfig {
 

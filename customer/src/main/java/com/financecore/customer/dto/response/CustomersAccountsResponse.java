@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomersAccountsResponse {
-    private String customerNumber;
+    private long customerNumber;
     private String firstName;
     private String lastName;
     private String email;

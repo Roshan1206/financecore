@@ -40,7 +40,7 @@ public class CustomerDocument {
     private long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_number", nullable = false)
     private Customer customer;
 
     @Enumerated(EnumType.STRING)

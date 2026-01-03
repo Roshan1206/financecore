@@ -1,29 +1,33 @@
 server:
   port: 8082
 
-account:
+fc:
   config:
     database:
       schema: fc_account
-    auth:
-      url: http://localhost:8090
-      client:
-        id: account-service
-        secret: account-secret
     transaction:
       url: http://localhost:8083
+    customer:
+      url: http://localhost:8081
+  auth:
+    url: http://localhost:8090
+    client:
+      id: account-service
+      secret: account-secret
 
 spring:
   application:
     name: account
+  profiles:
+    active: oauth,web
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${account.config.database.schema}
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${fc.config.database.schema}
     username: postgres
     password: password
   jpa:
     properties:
       hibernate:
-        default_schema: ${account.config.database.schema}
+        default_schema: ${fc.config.database.schema}
         format_sql: true
     hibernate:
       ddl-auto: validate
@@ -35,20 +39,20 @@ spring:
       client:
         registration:
           customer-service:
-            client_id: ${account.config.auth.client.id}
-            client-secret: ${account.config.auth.client.secret}
+            client_id: ${fc.auth.client.id}
+            client-secret: ${fc.auth.client.secret}
             authorization-grant-type: client_credentials
             scope: service.read,service.write,internal.api
             provider: auth-server
           transaction-service:
-            client_id: ${account.config.auth.client.id}
-            client_secret: ${account.config.auth.client.secret}
+            client_id: ${fc.auth.client.id}
+            client_secret: ${fc.auth.client.secret}
             authorization-grant-type: client_credentials
             scope: service.read,service.write,internal.api
             provider: auth-server
         provider:
           auth-server:
-            token-uri: ${account.config.auth.url}/oauth2/token
+            token-uri: ${fc.auth.url}/oauth2/token
     user:
       name: financecore
       password: password
@@ -61,3 +65,15 @@ eureka:
     register-with-eureka: false
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    org:
+      springframework:
+        security: TRACE

@@ -1,6 +1,8 @@
 package com.financecore.account.service.impl;
 
 import com.financecore.account.constant.Constants;
+import com.financecore.account.dto.request.AccountSearchCriteria;
+import com.financecore.account.dto.request.CreateAccountRequest;
 import com.financecore.account.dto.request.UpdateAccountRequest;
 import com.financecore.account.dto.response.BalanceResponse;
 import com.financecore.account.dto.response.AccountsResponse;
@@ -8,9 +10,10 @@ import com.financecore.account.dto.response.PageResponse;
 import com.financecore.account.entity.Account;
 import com.financecore.account.entity.AccountProduct;
 import com.financecore.account.entity.enums.AccountStatus;
-import com.financecore.account.entity.enums.ProductType;
 import com.financecore.account.repository.AccountRepository;
+import com.financecore.account.service.AccountProductService;
 import com.financecore.account.service.AccountService;
+import com.financecore.account.service.communication.CommunicationClient;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
@@ -46,10 +49,21 @@ import java.util.List;
 public class AccountServiceImpl implements AccountService {
 
     /**
+     * Calls to customer service
+     */
+    private final CommunicationClient communicationClient;
+
+    /**
      * Creating and executing queries.
      */
     @PersistenceContext
     private final EntityManager entityManager;
+
+
+    /**
+     * Service class for managing AccountProduct
+     */
+    private final AccountProductService accountProductService;
 
 
     /**
@@ -61,8 +75,11 @@ public class AccountServiceImpl implements AccountService {
     /**
      * Injecting required dependency via constructor injection.
      */
-    public AccountServiceImpl(EntityManager entityManager, AccountRepository accountRepository){
+    public AccountServiceImpl(CommunicationClient communicationClient, EntityManager entityManager,
+                              AccountProductService accountProductService, AccountRepository accountRepository){
+        this.communicationClient = communicationClient;
         this.entityManager = entityManager;
+        this.accountProductService = accountProductService;
         this.accountRepository = accountRepository;
     }
 
@@ -70,18 +87,12 @@ public class AccountServiceImpl implements AccountService {
     /**
      * Filter and fetch accounts based on requirements.
      *
-     * @param status    account current status
-     * @param type      account product type
-     * @param minAmount minimum account balance
-     * @param maxAmount account balance
-     * @param fromDate  from when
-     * @param toDate    till when
+     * @param searchCriteria options to be used while search operations
      * @param pageable  page no, size and sorting details
      * @return get paginated accounts
      */
     @Override
-    public PageResponse<AccountsResponse> getAccounts(AccountStatus status, ProductType type, BigDecimal minAmount, BigDecimal maxAmount,
-                                                      LocalDate fromDate, LocalDate toDate, String customerId, Pageable pageable) {
+    public PageResponse<AccountsResponse> getAccounts(AccountSearchCriteria searchCriteria, Pageable pageable) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<AccountsResponse> query = cb.createQuery(AccountsResponse.class);
         Root<Account> root = query.from(Account.class);
@@ -99,8 +110,8 @@ public class AccountServiceImpl implements AccountService {
                 root.get("availableBalance")
         ));
 
-        createFilter(status, type, minAmount, maxAmount, fromDate, toDate, customerId, cb, query, root, accountProductJoin);
-        long totalCount = getTotalCount(status, type, minAmount, maxAmount, fromDate, toDate, customerId, cb);
+        createFilter(searchCriteria, cb, query, root, accountProductJoin);
+        long totalCount = getTotalCount(searchCriteria, cb);
 
         if (pageable.getSort().isSorted()){
             List<Order> orders = new ArrayList<>();
@@ -222,7 +233,34 @@ public class AccountServiceImpl implements AccountService {
      */
     @Override
     public PageResponse<AccountsResponse> getCustomerAccounts(String customerId, Pageable pageable) {
-        return getAccounts(null, null, null, null, null, null, customerId, pageable);
+        AccountSearchCriteria searchCriteria = new AccountSearchCriteria();
+        searchCriteria.setCustomerId(customerId);
+        return getAccounts(searchCriteria, pageable);
+    }
+
+
+    /**
+     * Creates new account for user. validates user from customer service
+     *
+     * @param request required info
+     *
+     * @return created account response
+     */
+    @Override
+    public AccountsResponse createNewAccount(CreateAccountRequest request) {
+        String customerId = communicationClient.getAndValidateCustomer(request.getCustomerNumber());
+        if (customerId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found");
+        }
+        AccountProduct product = accountProductService.getAccountProduct(request.getProductName());
+        Account account = Account.builder()
+                            .customerId(customerId)
+                            .accountProduct(product)
+                            .accountStatus(AccountStatus.ACTIVE).build();
+        Account savedAccount = accountRepository.save(account);
+        return new AccountsResponse(savedAccount.getAccountNumber(), customerId, product.getProductName(),
+                product.getProductType(), savedAccount.getAccountStatus(), savedAccount.getOpenedAt(),
+                savedAccount.getBalance(), savedAccount.getAvailableBalance());
     }
 
 
@@ -248,24 +286,18 @@ public class AccountServiceImpl implements AccountService {
     /**
      * Add conditions on query based on requirements.
      *
-     * @param status account current status
-     * @param type account product type
-     * @param minAmount minimum account balance
-     * @param maxAmount account balance
-     * @param fromDate from when
-     * @param toDate till when
+     * @param searchCriteria predicates to be used during search
      * @param cb criteria builder adding conditions
      *
      * @return total no of items
      */
-    private long getTotalCount(AccountStatus status, ProductType type, BigDecimal minAmount, BigDecimal maxAmount, LocalDate fromDate,
-                               LocalDate toDate, String customerId, CriteriaBuilder cb) {
+    private long getTotalCount(AccountSearchCriteria searchCriteria, CriteriaBuilder cb) {
         CriteriaQuery<Long> query = cb.createQuery(Long.class);
         Root<Account> root = query.from(Account.class);
         Join<Account, AccountProduct> accountProductJoin = root.join("accountProduct", JoinType.LEFT);
 
         query.select(cb.count(root));
-        createFilter(status, type, minAmount, maxAmount, fromDate, toDate, customerId, cb, query, root, accountProductJoin);
+        createFilter(searchCriteria, cb, query, root, accountProductJoin);
         return entityManager.createQuery(query).getSingleResult();
     }
 
@@ -273,22 +305,19 @@ public class AccountServiceImpl implements AccountService {
     /**
      * Add conditions to create desired query based on search criteria.
      *
-     * @param status account current status
-     * @param type account product type
-     * @param minAmount minimum account balance
-     * @param maxAmount maximum account balance
-     * @param fromDate from when
-     * @param toDate till when
+     * @param searchCriteria options to be used while search operations
      * @param cb criteria builder adding conditions
      * @param query criteria query for adding clauses
      * @param root Root entity
      * @param accountProductJoin joined table
      */
-    private void createFilter(AccountStatus status, ProductType type, BigDecimal minAmount, BigDecimal maxAmount, LocalDate fromDate,
-                              LocalDate toDate, String customerId, CriteriaBuilder cb, CriteriaQuery<?> query,
+    private void createFilter(AccountSearchCriteria searchCriteria, CriteriaBuilder cb, CriteriaQuery<?> query,
                               Root<Account> root, Join<Account, AccountProduct> accountProductJoin) {
         List<Predicate> predicates = new ArrayList<>();
 
+        BigDecimal minAmount = searchCriteria.getMinAmount();
+        BigDecimal maxAmount = searchCriteria.getMaxAmount();
+        LocalDate fromDate = searchCriteria.getFromDate();
         if (minAmount != null && maxAmount != null) {
             predicates.add(cb.between(root.get("balance"), minAmount, maxAmount));
         } else if (minAmount != null) {
@@ -297,20 +326,21 @@ public class AccountServiceImpl implements AccountService {
             predicates.add(cb.greaterThanOrEqualTo(root.get("balance"), maxAmount));
         }
         if (fromDate != null) {
+            LocalDate toDate = searchCriteria.getToDate();
             if (toDate != null && !fromDate.isAfter(toDate)) {
                 predicates.add(cb.between(root.get("openedAt"), fromDate.atStartOfDay(), toDate.atTime(LocalTime.MAX)));
             } else {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("openedAt"), fromDate.atStartOfDay()));
             }
         }
-        if(status != null) {
-            predicates.add(cb.equal(root.get("accountStatus"), status));
+        if(searchCriteria.getAccountStatus() != null) {
+            predicates.add(cb.equal(root.get("accountStatus"), searchCriteria.getAccountStatus()));
         }
-        if (type != null) {
-            predicates.add(cb.equal(accountProductJoin.get("productType"), type));
+        if (searchCriteria.getProductType() != null) {
+            predicates.add(cb.equal(accountProductJoin.get("productType"), searchCriteria.getProductType()));
         }
-        if (customerId != null) {
-            predicates.add(cb.equal(root.get("customerId"), customerId));
+        if (searchCriteria.getCustomerId() != null) {
+            predicates.add(cb.equal(root.get("customerId"), searchCriteria.getCustomerId()));
         }
         if (!predicates.isEmpty()) {
             query.where(cb.and(predicates.toArray(new Predicate[0])));

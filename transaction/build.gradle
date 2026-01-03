@@ -21,6 +21,7 @@ configurations {
 }
 
 repositories {
+    mavenLocal()
 	mavenCentral()
 }
 
@@ -29,6 +30,7 @@ ext {
 }
 
 dependencies {
+    implementation 'com.financecore:library:0.0.1-SNAPSHOT'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'

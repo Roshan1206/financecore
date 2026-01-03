@@ -3,27 +3,31 @@ server:
 #  servlet:
 #    context-path: /api
 
-auth:
+fc:
+  auth:
+    jwt:
+      secret: 8LoEEq/i6RFn0E7Yzoe2W+CndT3Baoj0d4bPB17IGX8=
   config:
     database:
       schema: fc_auth
+    security-resource: false
     auth:
       url: http://localhost:${server.port}
       client:
-        id: user-server
-        secret: user-secret
+        id: user-service
+        secret: user-service
 
 spring:
   application:
     name: auth
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${auth.config.database.schema}
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${fc.config.database.schema}
     username: postgres
     password: password
   jpa:
     properties:
       hibernate:
-        default_schema: ${auth.config.database.schema}
+        default_schema: ${fc.config.database.schema}
     hibernate:
       ddl-auto: validate
   config:
@@ -32,6 +36,8 @@ spring:
     user:
       name: fincancecore
       password: password
+  profiles:
+    active: oauth
 
 eureka:
   instance:

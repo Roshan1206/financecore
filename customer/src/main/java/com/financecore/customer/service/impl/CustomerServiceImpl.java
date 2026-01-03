@@ -3,25 +3,21 @@ package com.financecore.customer.service.impl;
 import com.financecore.customer.dto.request.CustomerRegistrationRequest;
 import com.financecore.customer.dto.request.CustomerUpdateRequest;
 import com.financecore.customer.dto.response.AccountsResponse;
-import com.financecore.customer.dto.response.CustomerDocumentResponse;
 import com.financecore.customer.dto.response.CustomerInfoResponse;
 import com.financecore.customer.dto.response.CustomersAccountsResponse;
 import com.financecore.customer.dto.response.CustomersResponse;
 import com.financecore.customer.dto.response.PageResponse;
 import com.financecore.customer.entity.Address;
 import com.financecore.customer.entity.Customer;
-import com.financecore.customer.entity.CustomerDocument;
 import com.financecore.customer.entity.enums.AddressType;
 import com.financecore.customer.entity.enums.CustomerType;
-import com.financecore.customer.entity.enums.DocumentType;
 import com.financecore.customer.entity.enums.RiskProfile;
 import com.financecore.customer.entity.enums.Status;
-import com.financecore.customer.feign.AccountFeignClient;
 import com.financecore.customer.mapper.CustomerMapper;
 import com.financecore.customer.repository.AddressRepository;
-import com.financecore.customer.repository.CustomerDocumentRepository;
 import com.financecore.customer.repository.CustomerRepository;
 import com.financecore.customer.service.CustomerService;
+import com.financecore.customer.service.communication.CommunicationClient;
 import com.financecore.customer.util.EnumUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -32,27 +28,14 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,14 +50,14 @@ import java.util.List;
 public class CustomerServiceImpl implements CustomerService {
 
     /**
-     * Getting data from accounts service
-     */
-    private final AccountFeignClient accountFeignClient;
-
-    /**
      * Repository responsible for managing {@code Address}
      */
     private final AddressRepository addressRepository;
+
+    /**
+     * Getting data from accounts service
+     */
+    private final CommunicationClient communicationClient;
 
     /**
      * For creating and executing query
@@ -87,40 +70,22 @@ public class CustomerServiceImpl implements CustomerService {
      */
     private final EnumUtil enumUtil;
 
-
-    private final Environment environment;
-
-    /**
-     * Repository responsible for managing {@code CustomerDocument}
-     */
-    private final CustomerDocumentRepository customerDocumentRepository;
-
     /**
      * Repository responsible for managing {@code Customer}
      */
     private final CustomerRepository customerRepository;
 
-    private final WebClient webClient;
-
-
-    @Value("${customer.config.file.upload-dir}")
-    private String uploadDir;
-
     /**
      * Injecting required dependency via constructor injection
      */
-    public CustomerServiceImpl(AccountFeignClient accountFeignClient, AddressRepository addressRepository,
-                               EntityManager entityManager, EnumUtil enumUtil, Environment environment,
-                               CustomerDocumentRepository customerDocumentRepository,
-                               CustomerRepository customerRepository, WebClient webClient) {
-        this.accountFeignClient = accountFeignClient;
+    public CustomerServiceImpl(AddressRepository addressRepository, CommunicationClient communicationClient,
+                               EntityManager entityManager, EnumUtil enumUtil,
+                               CustomerRepository customerRepository) {
         this.addressRepository = addressRepository;
+        this.communicationClient = communicationClient;
         this.entityManager = entityManager;
         this.enumUtil = enumUtil;
-        this.environment = environment;
-        this.customerDocumentRepository = customerDocumentRepository;
         this.customerRepository = customerRepository;
-        this.webClient = webClient;
     }
 
 
@@ -195,7 +160,7 @@ public class CustomerServiceImpl implements CustomerService {
      * @return customer information
      */
     @Override
-    public CustomerInfoResponse getCustomerInfo(String customerNumber) {
+    public CustomerInfoResponse getCustomerInfo(long customerNumber) {
         Customer customer = getCustomer(customerNumber);
         return CustomerMapper.mapToCustomerInfoResponse(customer);
     }
@@ -215,10 +180,11 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = CustomerMapper.mapToCustomer(customerRegistrationRequest, customerType);
         Customer savedCustomer = customerRepository.save(customer);
 
-        Address address = CustomerMapper.mapToAddress(customer, addressType, customerRegistrationRequest.getAddress());
+
+        Address address = CustomerMapper.mapToAddress(savedCustomer, addressType, customerRegistrationRequest.getAddress());
         addressRepository.save(address);
 
-        return this.getCustomerInfo(savedCustomer.getCustomerNumber());
+        return getCustomerInfo(savedCustomer.getCustomerNumber());
     }
 
 
@@ -231,7 +197,7 @@ public class CustomerServiceImpl implements CustomerService {
      * @return Message
      */
     @Override
-    public String updateCustomer(String customerNumber, CustomerUpdateRequest customerUpdateRequest) {
+    public String updateCustomer(long customerNumber, CustomerUpdateRequest customerUpdateRequest) {
         Customer customer = getCustomer(customerNumber);
         customer.setEmail(customerUpdateRequest.getEmail());
         customer.setPhoneNumber(customerUpdateRequest.getPhoneNumber());
@@ -241,52 +207,13 @@ public class CustomerServiceImpl implements CustomerService {
 
 
     /**
-     * Upload customer documents
-     *
-     * @param customerNumber customer number
-     * @param file           Document
-     * @param documentType   document type
-     * @param documentNumber document number
-     * @return {@code CustomerDocumentResponse}
-     */
-    @Override
-    public CustomerDocumentResponse uploadDocuments(String customerNumber, MultipartFile file, String documentType,
-                                                    String documentNumber) {
-        Customer customer = getCustomer(customerNumber);
-        String fileName = customerNumber + System.currentTimeMillis();
-        String errorMessage = "Something went wrong. Please try again later....";
-
-        java.nio.file.Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            try {
-                Files.createDirectories(uploadPath);
-            } catch (IOException e) {
-                log.error("Error creating uploads directory", e.getCause());
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
-            }
-        }
-
-        java.nio.file.Path filePath = uploadPath.resolve(fileName);
-        try {
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.error("Error happened while copying file to directory.", e.getCause());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
-        }
-        DocumentType customerDocumentType = enumUtil.getSafeDocumentType(documentType);
-        CustomerDocument customerDocument = CustomerMapper.mapToCustomerDocument(customer, customerDocumentType, documentNumber, fileName, filePath.toString());
-        CustomerDocument savedDocument = customerDocumentRepository.save(customerDocument);
-        return CustomerMapper.mapToCustomerDocumentResponse(savedDocument);
-    }
-
-    /**
      * Update KYC verification status
      *
      * @param customerNumber customer number
      * @return Message
      */
     @Override
-    public String updateCustomerKyc(String customerNumber) {
+    public String updateCustomerKyc(long customerNumber) {
         Customer customer = getCustomer(customerNumber);
         customer.setKycStatus(Status.VERIFIED);
         customerRepository.save(customer);
@@ -304,20 +231,7 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(Long.valueOf(customerId)).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found with customer id: " + customerId)
         );
-        ResponseEntity<PageResponse<AccountsResponse>> customerAccounts;
-        if (environment.matchesProfiles("feign")){
-            customerAccounts = accountFeignClient.getCustomerAccounts(customerId);
-        }else {
-            customerAccounts = webClient
-                    .get()
-                    .uri("/customer/" + customerId)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is5xxServerError,
-                            res -> Mono.error(new ResponseStatusException(res.statusCode(), "Internal Server error")))
-                    .bodyToMono(new ParameterizedTypeReference<ResponseEntity<PageResponse<AccountsResponse>>>() {})
-                    .retry(3)
-                    .block();
-        }
+        ResponseEntity<PageResponse<AccountsResponse>> customerAccounts = communicationClient.getCustomerAccounts(customerId);
         if (customerAccounts == null || customerAccounts.getBody() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error while fetching customer accounts");
         }
@@ -328,13 +242,26 @@ public class CustomerServiceImpl implements CustomerService {
                 customer.getKycStatus(), customer.getRiskProfile(), customer.getCreatedAt(), accountsList);
     }
 
+
+    /**
+     * Get customer id after validating
+     *
+     * @param customerNumber customer number
+     * @return customer id
+     */
+    @Override
+    public String getAndValidateCustomer(long customerNumber) {
+        return getCustomer(customerNumber).getId();
+    }
+
     /**
      * Get Customer details
      *
      * @param customerNumber customer number
      * @return Customer
      */
-    private Customer getCustomer(String customerNumber) {
+    @Override
+    public Customer getCustomer(long customerNumber) {
         return customerRepository.findByCustomerNumber(customerNumber).orElseThrow(
                 () -> {
                     String message = "Customer not found with given Customer number: " + customerNumber + ". Customer update failed.";

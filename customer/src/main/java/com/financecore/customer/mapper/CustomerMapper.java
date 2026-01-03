@@ -20,7 +20,7 @@ public class CustomerMapper {
 
     public static CustomerInfoResponse mapToCustomerInfoResponse(Customer customer) {
         return CustomerInfoResponse.builder()
-                .customerNumber(customer.getCustomerNumber())
+                .customerID(customer.getId())
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
                 .customerType(customer.getCustomerType())

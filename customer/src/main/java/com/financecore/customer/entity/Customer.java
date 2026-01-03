@@ -12,6 +12,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,12 +47,19 @@ import java.util.Set;
 public class Customer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "customer_id")
-    private long id;
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "customer_seq")
+    @SequenceGenerator(
+            name = "customer_seq",
+            sequenceName = "fc_customer.customer_number_seq",
+            allocationSize = 1
+    )
+    @Column(name = "customer_number")
+    private long customerNumber;
 
-    @Column(name = "customer_number", unique = true, updatable = false, nullable = false)
-    private String customerNumber;
+    @Column(name = "customer_id", unique = true, updatable = false, nullable = false)
+    private String id;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -98,4 +107,12 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private final List<CustomerDocument> customerDocuments = new ArrayList<>();
+
+    /**
+     * create customer id after creating customer number and before inserting in db.
+     */
+    @PrePersist
+    private void prePersist(){
+        this.id = "CUST" + customerNumber;
+    }
 }

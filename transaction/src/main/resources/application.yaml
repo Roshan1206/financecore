@@ -1,15 +1,15 @@
 server:
   port: 8083
 
-transaction:
+fc:
+  auth:
+    url: http://localhost:8090
+    client:
+      id: transaction-service
+      secret: transaction-secret
   config:
     database:
       schema: fc_transaction
-    auth:
-      url: http://localhost:8090
-      client:
-        id: transaction-service
-        secret: transaction-secret
     account:
       url: http://localhost:8082
 
@@ -19,13 +19,13 @@ spring:
   profiles:
     active: web
   datasource:
-    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${transaction.config.database.schema}
+    url: jdbc:postgresql://localhost:5432/finance_core?currentSchema=${fc.config.database.schema}
     username: postgres
     password: password
   jpa:
     properties:
       hibernate:
-        default_schema: ${transaction.config.database.schema}
+        default_schema: ${fc.config.database.schema}
     hibernate:
       ddl-auto: validate
   config:
@@ -35,14 +35,14 @@ spring:
       client:
         registration:
           account-service:
-            client_id: ${transaction.config.auth.client.id}
-            client_secret: ${transaction.config.auth.client.secret}
+            client_id: ${fc.auth.client.id}
+            client_secret: ${fc.auth.client.secret}
             authorization-grant-type: client_credentials
             scopes: service.read,service.write,internal.api
             provider: auth-server
         provider:
           auth-server:
-            token-uri: ${transaction.config.auth.url}/oauth2/token
+            token-uri: ${fc.auth.url}/oauth2/token
     user:
       name: financecore
       password: password
@@ -55,3 +55,9 @@ eureka:
     fetch-registry: false
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

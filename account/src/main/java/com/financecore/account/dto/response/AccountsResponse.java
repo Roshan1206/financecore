@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Data
 public class AccountsResponse {
     private String accountNumber;
-    private long customerId;
+    private String customerId;
     private String productName;
     private String productType;
     private String accountStatus;
@@ -27,7 +27,7 @@ public class AccountsResponse {
 
     public AccountsResponse() {}
 
-    public AccountsResponse(String accountNumber, long customerId, String productName, ProductType productType, AccountStatus accountStatus,
+    public AccountsResponse(String accountNumber, String customerId, String productName, ProductType productType, AccountStatus accountStatus,
                             LocalDateTime openedAt, BigDecimal balance, BigDecimal availableBalance) {
         this.accountNumber = accountNumber;
         this.customerId = customerId;

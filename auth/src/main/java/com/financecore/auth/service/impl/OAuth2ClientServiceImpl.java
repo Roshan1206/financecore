@@ -56,14 +56,9 @@ public class OAuth2ClientServiceImpl implements OAuth2ClientService {
      */
     @Override
     public ClientResponse registerClient(ClientRegistrationRequest clientRegistrationRequest) {
-        try {
-            RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientRegistrationRequest.getClientId());
-            if (registeredClient != null) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Client Id already exists");
-            }
-        } catch (ResponseStatusException e) {
-            log.error("Client Id already exists");
-            return null;
+        RegisteredClient registeredClient = getRegisteredClient(clientRegistrationRequest.getClientId());
+        if (registeredClient != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Client Id already exists");
         }
 
         OAuth2TokenFormat tokenFormat = "jwt".equalsIgnoreCase(clientRegistrationRequest.getTokenFormat())
@@ -111,6 +106,17 @@ public class OAuth2ClientServiceImpl implements OAuth2ClientService {
         RegisteredClient client = clientBuilder.build();
         registeredClientRepository.save(client);
         return createClientResponse(client);
+    }
+
+    /**
+     * Get registered client from repository
+     *
+     * @param clientId client id
+     * @return Registered client
+     */
+    @Override
+    public RegisteredClient getRegisteredClient(String clientId) {
+        return registeredClientRepository.findByClientId(clientId);
     }
 
 
